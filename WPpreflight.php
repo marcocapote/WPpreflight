@@ -6,6 +6,8 @@
  * Author: marcocapote
  */
 
+require_once __DIR__ . '/includes/functions.php';
+
 
  function WPpreflight_shortcode() {
     // Obtém o valor da página a partir do parâmetro GET (ou usa "alteracao" como padrão)
