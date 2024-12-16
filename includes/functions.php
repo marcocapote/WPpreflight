@@ -52,6 +52,8 @@ class Functions {
             $pdfArquivo = str_replace('\\', '/', $pdfArquivo);
             $numPages = Functions::verificar_qtd_paginas($uploaded_file);
             $sangras = [];
+            $trims = [];
+            $resultados = [];
             // Verifica se o caminho do arquivo foi resolvido corretamente
             if (!$pdfArquivo) {
                 return "Erro ao localizar o arquivo. " . $pdfArquivo;
@@ -70,11 +72,22 @@ class Functions {
                     
                     array_push($sangras, $sangraPagina);
                    // return " numero de paginas: ". $numPages . ' ' . $partes[1] . ' ' . $partes[2] . ' ' . $partes[3] . ' ' . $partes[4] . ' '. $partes[5] . ' ' . $partes[6];
+                }else if(isset($partes[2]) && $partes[2] === "TrimBox:"){
+                    $trimPagina = [$partes[3], $partes[4], $partes[5], $partes[6]];
+
+                    array_push($trims, $trimPagina);
                 } else{
                     continue;
                 }
             }
-            return $sangras[1][3];
+            for ($row = 0; $row < $numPages; $row++){
+                $resultado = [(floatval($sangras[$row][2])) - floatval($trims[$row][2]), floatval($sangras[$row][3]) - floatval($trims[$row][3])];
+                array_push($resultados, $resultado);
+            }
+            // for ($i = 0; $i < count($sangras);$i ++){
+                
+            // }
+            return print_r($resultados);
             
         }
     }
