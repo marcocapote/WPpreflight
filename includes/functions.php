@@ -20,7 +20,7 @@ class Functions {
             if ($retorno !== 0) {
                 return "Erro ao executar o comando Ghostscript. Comando: " . implode("\n", $saida);
             }
-
+            $mensagens=[];
             // Variável para rastrear se algum item não está em "cmyk"
             foreach ($saida as $index => $linha) {
                 // Ignora a primeira linha (cabeçalho)
@@ -35,13 +35,17 @@ class Functions {
                 if (isset($partes[5])) {
                     // Verifica se o 6º item é diferente de "cmyk"
                     if (strtolower($partes[5]) !== "cmyk") {
-                        return "Pelo menos um item não está em cmyk. Item encontrado: " . $partes[5];
+                        $mensagens[] = "Encontrado imagem na pagina ". ($partes[0]) ." que não está em cmyk. Formato encontrado: " . $partes[5] . "<br>";
                     }
                 }
             }
-
-            // Se todos os itens forem "cmyk", retorna sucesso
-            return "Todos os itens estão em cmyk.";
+            if(!empty($mensagens)){
+                return print_r($mensagens);
+            }else{
+                // Se todos os itens forem "cmyk", retorna sucesso
+                return "Todos os itens estão em cmyk.";
+            }
+            
         } else {
             return "Nenhum arquivo válido foi enviado.";
         }
@@ -80,14 +84,31 @@ class Functions {
                     continue;
                 }
             }
-            for ($row = 0; $row < $numPages; $row++){
-                $resultado = [(floatval($sangras[$row][2])) - floatval($trims[$row][2]), floatval($sangras[$row][3]) - floatval($trims[$row][3])];
+            for ($row = 0; $row < $numPages; $row++) {
+                $resultado = [
+                    (floatval($sangras[$row][2]) - floatval($trims[$row][2])) * (25.4 / 72),
+                    (floatval($sangras[$row][3]) - floatval($trims[$row][3])) * (25.4 / 72)
+                ];
                 array_push($resultados, $resultado);
             }
-            // for ($i = 0; $i < count($sangras);$i ++){
-                
-            // }
-            return print_r($resultados);
+            
+            $mensagens = []; // Array para armazenar mensagens
+            
+            foreach ($resultados as $index => $linha) {
+                $linha[0] = round($linha[0], 1);
+                $linha[1] = round($linha[1], 1);
+                // Verificar se algum valor é menor que 3
+                if ( $linha[0]  < 3 || $linha[1] < 3) {
+                    $mensagens[] = " A pagina " . ($index + 1) . " está com a sangria abaixo do mínimo (3mm): " . $linha[0] . "mm <br>";
+                    
+                }else if ($linha[0] < 5 || $linha[1] < 5){
+                    $mensagens[] = " A pagina " . ($index + 1) . " está com a sangria acima do mínimo mas abaixo do recomendado (5mm): ". $linha[0] . "mm <br>";
+                }
+            }
+            
+            return print_r($mensagens);
+            
+            
             
         }
     }
@@ -129,11 +150,59 @@ class Functions {
             }
 
             // Se todos os itens forem "cmyk", retorna sucesso
-            return "Todos os itens estão em cmyk.";
         } else {
             return "Nenhum arquivo válido foi enviado.";
         }
     
+    }
+    public static function verificar_resolucao($uploaded_file){
+        if (isset($uploaded_file['file']) && file_exists($uploaded_file['file'])) {
+            // Caminho absoluto do arquivo enviado
+            $pdfArquivo = realpath($uploaded_file['file']);
+            $pdfArquivo = str_replace('\\', '/', $pdfArquivo);
+
+            // Verifica se o caminho do arquivo foi resolvido corretamente
+            if (!$pdfArquivo) {
+                return "Erro ao localizar o arquivo. " . $pdfArquivo;
+            }
+
+            // Comando Ghostscript para contar as páginas do PDF
+            $comando = '"C:\poppler-24.08.0\Library\bin\pdfimages.exe" -list ' . $pdfArquivo . ' 2>&1';
+            exec($comando, $saida, $retorno);
+
+            // Verifica se o comando foi executado com sucesso
+            if ($retorno !== 0) {
+                return "Erro ao executar o comando Ghostscript. Comando: " . implode("\n", $saida);
+            }
+            $mensagens=[];
+            // Variável para rastrear se algum item não está em "cmyk"
+            foreach ($saida as $index => $linha) {
+                // Ignora a primeira linha (cabeçalho)
+                if ($index === 0) {
+                    continue; // Pula a primeira linha
+                }
+
+                // Quebra a linha em partes
+                $partes = preg_split('/\s+/', trim($linha)); // Divide a linha por espaços
+
+                // Verifica se temos pelo menos 6 itens na linha
+                if (isset($partes[12])) {
+                    // Verifica se o 6º item é diferente de "cmyk"
+                    if (intval($partes[12]) < 300) {
+                        $mensagens[] = "Encontrado imagem na pagina ". ($partes[0]) ." que esta com a resolução abaixo do recomendado (300dpi). Resolução encontrada: " . $partes[12] . "dpi <br>";
+                    }
+                }
+            }
+            if(!empty($mensagens)){
+                return print_r($mensagens);
+            }else{
+                // Se todos os itens forem "cmyk", retorna sucesso
+                return "Todos os itens estão em cmyk.";
+            }
+            
+        } else {
+            return "Nenhum arquivo válido foi enviado.";
+        }
     }
 }
 ?>

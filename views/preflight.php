@@ -16,8 +16,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
         $resposta2 =Functions::verificar_sangra($uploaded_file);
         echo $resposta2 . "<br>";
 
+        $resolucao = Functions::verificar_resolucao($uploaded_file);
+        echo $resolucao;
+
         $quantidade = Functions::verificar_qtd_paginas($uploaded_file);
-        echo $quantidade;
+        echo "<br> <h5> Quantidade de paginas no arquivo: " . $quantidade . "</h5><br>";
+
+        
     }
 }
 ?>
