@@ -43,7 +43,7 @@ class Functions {
                 return print_r($mensagens);
             }else{
                 // Se todos os itens forem "cmyk", retorna sucesso
-                return "Todos os itens estão em cmyk.";
+                return "Todos as imagens estão em cmyk.";
             }
             
         } else {
@@ -104,11 +104,11 @@ class Functions {
                 }else if ($linha[0] < 5 || $linha[1] < 5){
                     $mensagens[] = " A pagina " . ($index + 1) . " está com a sangria acima do mínimo mas abaixo do recomendado (5mm): ". $linha[0] . "mm <br>";
                 }else{
-                    $mensagens[] = "A pagina está com a sangra correta";
+                    $mensagens[] = "A pagina " . ($index + 1) . " está com a sangra correta <br>";
                 }
             }
             
-            return print_r($mensagens);
+            return implode($mensagens);
             
             
             
@@ -199,7 +199,7 @@ class Functions {
                 return print_r($mensagens);
             }else{
                 // Se todos os itens forem "cmyk", retorna sucesso
-                return "Todos os itens estão com a resolução correta.";
+                return "Todos as imagens estão com a resolução correta.";
             }
             
         } else {
@@ -234,8 +234,7 @@ class Functions {
                 return "Erro ao executar o comando. Saída: " . implode("\n", $saida) . "<br>" . $comando;
             }
     
-            $mensagens = [];
-            // Variável para rastrear se algum item não está em "cmyk"
+            $resultados = [];
             foreach ($saida as $index => $linha) {
                 // Ignora a primeira linha (cabeçalho)
                 if ($index === 0) {
@@ -247,30 +246,52 @@ class Functions {
     
                 // Verifica se o item é `devicecmyk`
                 if (isset($partes[5]) && strtolower($partes[3]) !== 'colourspace="devicecmyk"') {
-                    // Busca para cima a linha mais próxima que começa com `<page`
-                    for ($i = $index - 1; $i >= 0; $i--) {
-                        $linhaPagina = $saida[$i];
-                        $partesPagina = preg_split('/\s+/', trim($linhaPagina));
+                    $pagina = null;
+                    $textbox = null;
     
-                        if (isset($partesPagina[0]) && strtolower($partesPagina[0]) === '<page') {
-                            for ($l = $index - 1; $l >= 0; $l--){
-                                $linhaBox = $saida[$l];
-                                $partesBox = preg_split('/\s+/', trim($linhaBox));
-                                // Adiciona a informação da página à mensagem
-                                 $mensagens[] = "Encontrado caracter na página " . htmlspecialchars($partesPagina[1]) . " que não está em cmyk. Formato encontrado: " . $partes[3] . "<br>";
-                                break;
-                            }
-                            
+                    // Busca para cima no arquivo
+                    for ($i = $index - 1; $i >= 0; $i--) {
+                        $linhaAnterior = $saida[$i];
+                        $partesAnterior = preg_split('/\s+/', trim($linhaAnterior));
+    
+                        // Verifica se a linha começa com `<page>`
+                        if (!$pagina && isset($partesAnterior[0]) && strtolower($partesAnterior[0]) === '<page') {
+                            $pagina = $partesAnterior[1]; // Salva o valor [1] da linha `<page>`
+                        }
+    
+                        // Verifica se a linha começa com `<textbox>`
+                        if (!$textbox && isset($partesAnterior[0]) && strtolower($partesAnterior[0]) === '<textbox') {
+                            $textbox = $partesAnterior[1]; // Salva o valor [1] da linha `<textbox>`
+                        }
+    
+                        // Se ambos foram encontrados, não é necessário continuar
+                        if ($pagina && $textbox) {
+                            break;
+                        }
+                    }
+    
+                    // Agrupa resultados por `textbox`
+                    if ($textbox) {
+                        $chave = "Textbox ID: $textbox, Página: $pagina";
+                        if (!isset($resultados[$chave])) {
+                            $resultados[$chave] = [];
+                        }
+                        if (!in_array($partes[3], $resultados[$chave])) {
+                            $resultados[$chave][] = $partes[3]; // Adiciona o formato encontrado
                         }
                     }
                 }
             }
     
-            if (!empty($mensagens)) {
+            if (!empty($resultados)) {
+                $mensagens = [];
+                foreach ($resultados as $chave => $formatos) {
+                    $mensagens[] = "$chave contém formatos não CMYK: " . implode(', ', $formatos) . "<br>";
+                }
                 return implode("\n", $mensagens);
             } else {
                 // Se todos os itens forem "cmyk", retorna sucesso
-                return "Todos os itens estão em cmyk.";
+                return "Todos os textos estão em cmyk.";
             }
         } else {
             return "Nenhum arquivo válido foi enviado.";
