@@ -103,6 +103,8 @@ class Functions {
                     
                 }else if ($linha[0] < 5 || $linha[1] < 5){
                     $mensagens[] = " A pagina " . ($index + 1) . " está com a sangria acima do mínimo mas abaixo do recomendado (5mm): ". $linha[0] . "mm <br>";
+                }else{
+                    $mensagens[] = "A pagina está com a sangra correta";
                 }
             }
             
@@ -197,12 +199,86 @@ class Functions {
                 return print_r($mensagens);
             }else{
                 // Se todos os itens forem "cmyk", retorna sucesso
-                return "Todos os itens estão em cmyk.";
+                return "Todos os itens estão com a resolução correta.";
             }
             
         } else {
             return "Nenhum arquivo válido foi enviado.";
         }
     }
+    public static function verificar_fontes($uploaded_file) {
+        if (isset($uploaded_file['file']) && file_exists($uploaded_file['file'])) {
+            // Caminho absoluto do arquivo enviado
+            $pdfArquivo = realpath($uploaded_file['file']);
+            $pdfArquivo = str_replace(['\\', '/'], '/', $pdfArquivo);
+    
+            // Obtém o caminho absoluto do script Python
+            $diretorio = __DIR__ . '/function.py';
+    
+            // Substituir todas as barras invertidas e normais para um formato padronizado
+            $diretorio = str_replace(['\\', '/'], '/', $diretorio);
+    
+            // Verifica se o caminho do arquivo foi resolvido corretamente
+            if (!$pdfArquivo) {
+                return "Erro ao localizar o arquivo. Caminho: " . $pdfArquivo;
+            }
+    
+            // Monta o comando para executar o script Python
+            $comando = 'C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python313\\python.exe ' . $diretorio . ' ' . $pdfArquivo . ' 2>&1';
+    
+            // Executa o comando
+            exec(str_replace(['\\', '/'], '/', $comando), $saida, $retorno);
+    
+            // Verifica se o comando foi executado com sucesso
+            if ($retorno !== 0) {
+                return "Erro ao executar o comando. Saída: " . implode("\n", $saida) . "<br>" . $comando;
+            }
+    
+            $mensagens = [];
+            // Variável para rastrear se algum item não está em "cmyk"
+            foreach ($saida as $index => $linha) {
+                // Ignora a primeira linha (cabeçalho)
+                if ($index === 0) {
+                    continue;
+                }
+    
+                // Quebra a linha em partes
+                $partes = preg_split('/\s+/', trim($linha));
+    
+                // Verifica se o item é `devicecmyk`
+                if (isset($partes[5]) && strtolower($partes[3]) !== 'colourspace="devicecmyk"') {
+                    // Busca para cima a linha mais próxima que começa com `<page`
+                    for ($i = $index - 1; $i >= 0; $i--) {
+                        $linhaPagina = $saida[$i];
+                        $partesPagina = preg_split('/\s+/', trim($linhaPagina));
+    
+                        if (isset($partesPagina[0]) && strtolower($partesPagina[0]) === '<page') {
+                            for ($l = $index - 1; $l >= 0; $l--){
+                                $linhaBox = $saida[$l];
+                                $partesBox = preg_split('/\s+/', trim($linhaBox));
+                                // Adiciona a informação da página à mensagem
+                                 $mensagens[] = "Encontrado caracter na página " . htmlspecialchars($partesPagina[1]) . " que não está em cmyk. Formato encontrado: " . $partes[3] . "<br>";
+                                break;
+                            }
+                            
+                        }
+                    }
+                }
+            }
+    
+            if (!empty($mensagens)) {
+                return implode("\n", $mensagens);
+            } else {
+                // Se todos os itens forem "cmyk", retorna sucesso
+                return "Todos os itens estão em cmyk.";
+            }
+        } else {
+            return "Nenhum arquivo válido foi enviado.";
+        }
+    }
+    
+
+    
+    
 }
 ?>
