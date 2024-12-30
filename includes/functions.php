@@ -6,7 +6,6 @@ class Functions {
             // Caminho absoluto do arquivo enviado
             $pdfArquivo = realpath($uploaded_file['file']);
             $pdfArquivo = str_replace('\\', '/', $pdfArquivo);
-
             // Verifica se o caminho do arquivo foi resolvido corretamente
             if (!$pdfArquivo) {
                 return "Erro ao localizar o arquivo. " . $pdfArquivo;
@@ -40,10 +39,10 @@ class Functions {
                 }
             }
             if(!empty($mensagens)){
-                return print_r($mensagens);
+                return $mensagens;
             }else{
                 // Se todos os itens forem "cmyk", retorna sucesso
-                return "Todos as imagens estão em cmyk.";
+                return "Todas as imagens estão em cmyk.";
             }
             
         } else {
@@ -103,17 +102,83 @@ class Functions {
                     
                 }else if ($linha[0] < 5 || $linha[1] < 5){
                     $mensagens[] = " A pagina " . ($index + 1) . " está com a sangria acima do mínimo mas abaixo do recomendado (5mm): ". $linha[0] . "mm <br>";
-                }else{
-                    $mensagens[] = "A pagina " . ($index + 1) . " está com a sangra correta <br>";
                 }
             }
             
-            return implode($mensagens);
+            if(!$mensagens){
+                return "Todas as paginas estão com a sangra correta";
+            }else{
+                return $mensagens;
+            }
+            
             
             
             
         }
     }
+
+    public static function verificar_margem_lombo($uploaded_file) {
+        if (isset($uploaded_file['file']) && file_exists($uploaded_file['file'])) {
+            $pdfArquivo = realpath($uploaded_file['file']);
+            $pdfArquivo = str_replace('\\', '/', $pdfArquivo);
+            $numPages = Functions::verificar_qtd_paginas($uploaded_file);
+            $artboxes = [];
+            $trims = [];
+            $resultados = [];
+    
+            if (!$pdfArquivo) {
+                return "Erro ao localizar o arquivo. " . $pdfArquivo;
+            }
+    
+            $comando = '"C:\poppler-24.08.0\Library\bin\pdfinfo.exe" -box -f 1 -l ' . $numPages . ' ' . $pdfArquivo . ' 2>&1';
+            exec($comando, $saida, $retorno);
+    
+            foreach ($saida as $index => $linha) {
+                $partes = preg_split('/\s+/', trim($linha));
+                if (isset($partes[2]) && $partes[2] === "ArtBox:") {
+                    $artboxes[] = [$partes[3], $partes[4], $partes[5], $partes[6]];
+                } else if (isset($partes[2]) && $partes[2] === "TrimBox:") {
+                    $trims[] = [$partes[3], $partes[4], $partes[5], $partes[6]];
+                }
+            }
+    
+            for ($row = 0; $row < $numPages; $row++) {
+                $pagina = $row + 1; // Páginas começam em 1
+                if ($pagina % 2 !== 0) { // Página ímpar: margem esquerda
+                    $margem = (floatval($artboxes[$row][0]) - floatval($trims[$row][0])) * (25.4 / 72);
+                    $resultados[] = [
+                        'pagina' => $pagina,
+                        'lado' => 'esquerda',
+                        'margem' => round($margem, 1)
+                    ];
+                } else { // Página par: margem direita
+                    $margem = (floatval($trims[$row][2]) - floatval($artboxes[$row][2])) * (25.4 / 72);
+                    $resultados[] = [
+                        'pagina' => $pagina,
+                        'lado' => 'direita',
+                        'margem' => round($margem, 1)
+                    ];
+                }
+            }
+    
+            $mensagens = [];
+            foreach ($resultados as $resultado) {
+                if ($resultado['margem'] < 10) {
+                    $mensagens[] = "A página " . $resultado['pagina'] . " está com a margem de segurança " . $resultado['lado'] . " abaixo do mínimo (10mm): " . $resultado['margem'] . "mm <br>";
+                } else {
+                    $mensagens[] = "A página " . $resultado['pagina'] . " está com a margem de segurança " . $resultado['lado'] . " correta: " . $resultado['margem'] . "mm <br>";
+                }
+            }
+    
+            return implode($mensagens);
+        }
+        return "Arquivo não encontrado ou inválido.";
+    }
+    
+    
+    
+    
+
     public static function verificar_qtd_paginas($uploaded_file){
         if (isset($uploaded_file['file']) && file_exists($uploaded_file['file'])) {
             // Caminho absoluto do arquivo enviado
@@ -196,10 +261,10 @@ class Functions {
                 }
             }
             if(!empty($mensagens)){
-                return print_r($mensagens);
+                return $mensagens;
             }else{
                 // Se todos os itens forem "cmyk", retorna sucesso
-                return "Todos as imagens estão com a resolução correta.";
+                return "Todas as imagens estão com a resolução correta.";
             }
             
         } else {
@@ -288,7 +353,7 @@ class Functions {
                 foreach ($resultados as $chave => $formatos) {
                     $mensagens[] = "$chave contém formatos não CMYK: " . implode(', ', $formatos) . "<br>";
                 }
-                return implode("\n", $mensagens);
+                return $mensagens;
             } else {
                 // Se todos os itens forem "cmyk", retorna sucesso
                 return "Todos os textos estão em cmyk.";
