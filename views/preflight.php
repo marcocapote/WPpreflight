@@ -1,23 +1,26 @@
 <?php
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
+    $isColaChecked = isset($_POST['cola']); // Verifica se a checkbox "cola" está marcada
+
     // Usa wp_handle_upload para processar o upload
     require_once(ABSPATH . 'wp-admin/includes/file.php');
     $upload_overrides = array('test_form' => false); // Impede que o WordPress faça uma verificação de formulário
     $uploaded_file = wp_handle_upload($_FILES['file'], $upload_overrides);
 
-    // Verifica se houve erro no upload
     if (isset($uploaded_file['error'])) {
         echo 'Erro no upload: ' . $uploaded_file['error'];
     } else {
-        // Se o upload foi bem-sucedido, verifica o arquivo
+        // Processa o arquivo apenas se o upload foi bem-sucedido
         $coresimagem = Functions::verificar_cores_paginas($uploaded_file);
         $sangra = Functions::verificar_sangra($uploaded_file);
         $resolucao = Functions::verificar_resolucao($uploaded_file);
         $quantidade = Functions::verificar_qtd_paginas($uploaded_file);
         $corfonte = Functions::verificar_fontes($uploaded_file);
-        $margemlombo = Functions::verificar_margem_lombo($uploaded_file);
+        $margemlombo = $isColaChecked ? Functions::verificar_margem_lombo($uploaded_file) : null; // Apenas se "cola" estiver marcada
+        $margemseguranca = Functions::verificar_margem_demais_casos($uploaded_file);
     }
 }
+
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -41,9 +44,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
 </head>
 
 <body style="background-color: lightgray">
-
-
-
     <div class="container-fluid">
         <div class="row">
             <div class="col">
@@ -52,63 +52,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                 </div>
             </div>
         </div>
-        <div class="row">
+        <div class="row rounded-top pt-3 bg-light">
             <div class="col">
-                <div class="container rounded-top bg-light p-3 pl-4">
+                <div class="container mt-2">
                     <h2>Upload PDF</h2>
                     <form action="" method="post" enctype="multipart/form-data">
                         <label for="file">Upload PDF</label>
                         <input type="file" id="file" name="file">
+
+                        <label for="cola">Material colado</label>
+                        <input type="checkbox" name="cola" id="">
+                        <br>
+
                         <button type="submit" name="submit_arquivo">Enviar</button>
                     </form>
-
                 </div>
             </div>
+            <div class="col pt-5">
+                <div class="text">Quantidade de paginas: <?php echo $quantidade['pagina'] ?? '' ?></div>
+                <div class="text">Tamanho do arquivo: <?php echo $quantidade['size'] ?? '' ?> </div>
+            </div>
         </div>
-        <div class="row">
+        <div class="row bg-light ">
             <div class="col">
-                <div class="container pt-3 bg-light pb-2">
+                <div class="container pt-3 pb-2">
                     <?php
-                    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])){
-
-                   
-                    if (isset($coresimagem) && is_array($coresimagem)) {
-                        echo "<h5><a href='#' class='text-danger funcao-alternar' alternar-nome='lista-cores-imagem'>Foram encontradas " . count($coresimagem) . " imagens que não estão em cmyk</a></h5>";
-                    } else {
-                        echo "<h5 class='text-success'>" . $coresimagem . "</h5>";
+                    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
+                        // Array com os dados a serem verificados
+                        $checks = [
+                            'lista-cores-imagem' => [
+                                'data' => $coresimagem ?? null,
+                                'mensagem' => 'imagens que não estão em cmyk',
+                            ],
+                            'lista-sangra' => [
+                                'data' => $sangra ?? null,
+                                'mensagem' => 'páginas sem a devida sangra',
+                            ],
+                            'lista-resolucao' => [
+                                'data' => $resolucao ?? null,
+                                'mensagem' => 'imagens sem a devida resolução',
+                            ],
+                            'lista-cor-fonte' => [
+                                'data' => $corfonte ?? null,
+                                'mensagem' => 'caixas de texto que não estão em cmyk',
+                            ],
+                            'lista-margem-lombo' => [
+                                'data' => $margemlombo ?? null,
+                                'mensagem' => 'paginas estão sem a margem de segurança do lombo'
+                            ],
+                            'lista-margem-seguranca' => [
+                                'data' => $margemseguranca ?? null,
+                                'mensagem' => 'paginas estão sem a margem de segurança'
+                            ],
+                        ];
+                        // Iterar sobre os dados
+                        foreach ($checks as $nomeLista => $info) {
+                            if (isset($info['data']) && is_array($info['data'])) {
+                                echo "<h5><a href='#' class='text-danger funcao-alternar' alternar-nome='{$nomeLista}'>Foram encontradas " . count($info['data']) . " {$info['mensagem']}</a></h5>";
+                            } else {
+                                echo "<h5 class='text-success'>" . ($info['data'] ?? 'Tudo OK') . "</h5>";
+                            }
+                        }
                     }
-
-                    if (isset($sangra) && is_array($sangra)) {
-                        echo "<h5><a href='#' class='text-danger funcao-alternar' alternar-nome='lista-sangra'>Foram encontradas " . count($sangra) . " paginas sem a devida sangra</a></h5>";
-                    } else {
-                        echo "<h5 class='text-success'>" . $sangra . "</h5>";
-                    }
-
-                    if (isset($resolucao) && is_array($resolucao)) {
-                        echo "<h5><a href='#' class='text-danger funcao-alternar' alternar-nome='lista-resolucao'>Foram encontradas " . count($resolucao) . " imagens sem a devida resolução</a></h5>";
-                    } else {
-                        echo "<h5 class='text-success'>" . $resolucao . "</h5>";
-                    }
-
-                    if (isset($corfonte) && is_array($corfonte)) {
-                        echo "<h5><a href='#' class='text-danger funcao-alternar' alternar-nome='lista-cor-fonte'>Foram encontradas " . count($corfonte) . " caixas de texto que nao estão em cmyk</a></h5>";
-
-                    } else {
-                        echo "<h5 class='text-success'>" . $corfonte . "</h5>";
-                    }
-
-                }
                     ?>
 
-
                 </div>
             </div>
         </div>
-        <div class="row pb-3">
-
+        <div class="row bg-light pb-3">
             <div class="col pb-3">
                 <div class="container">
-
                 </div>
                 <div class="container pt-3 bg-light pb-3" id="lista-cores-imagem" style="display: none;">
                     <?php
@@ -128,6 +141,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                         echo "<table class='table table-striped table-bordered'>";
                         echo "<thead><tr><th>Páginas sem a devida sangra</th></tr></thead><tbody>";
                         foreach ($sangra as $pagina) {
+                            echo "<tr><td>{$pagina}</td></tr>";
+                        }
+                        echo "</tbody></table>";
+                    }
+                    ?>
+                </div>
+                <div class="container pt-3 bg-light pb-3" id="lista-margem-lombo" style="display: none;">
+                    <?php
+                    if (!empty($margemlombo) && is_array($margemlombo)) {
+                        echo "<table class='table table-striped table-bordered'>";
+                        echo "<thead><tr><th>Páginas sem a devida margem no lombo</th></tr></thead><tbody>";
+                        foreach ($margemlombo as $pagina) {
+                            echo "<tr><td>{$pagina}</td></tr>";
+                        }
+                        echo "</tbody></table>";
+                    }
+                    ?>
+                </div>
+                <div class="container pt-3 bg-light pb-3" id="lista-margem-seguranca" style="display: none;">
+                    <?php
+                    if (!empty($margemseguranca) && is_array($margemseguranca)) {
+                        echo "<table class='table table-striped table-bordered'>";
+                        echo "<thead><tr><th>Páginas sem a devida margem</th></tr></thead><tbody>";
+                        foreach ($margemseguranca as $pagina) {
                             echo "<tr><td>{$pagina}</td></tr>";
                         }
                         echo "</tbody></table>";
@@ -161,8 +198,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
 
             </div>
         </div>
-
-
 
 
     </div>
