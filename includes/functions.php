@@ -164,12 +164,15 @@ class Functions
             foreach ($resultados as $resultado) {
                 if ($resultado['margem'] < 10) {
                     $mensagens[] = "A página " . $resultado['pagina'] . " está com a margem de segurança " . $resultado['lado'] . " abaixo do mínimo (10mm): " . $resultado['margem'] . "mm <br>";
-                } else {
-                    $mensagens[] = "A página " . $resultado['pagina'] . " está com a margem de segurança " . $resultado['lado'] . " correta: " . $resultado['margem'] . "mm <br>";
                 }
             }
 
-            return $mensagens;
+            if (!empty($mensagens)) {
+                return $mensagens;
+            } else {
+                return "Todas as paginas estão com a margem de segurança do lombo corretas";
+            }
+
         }
         return "Arquivo não encontrado ou inválido.";
     }
@@ -236,14 +239,14 @@ class Functions
 
                 if (!empty($erros)) {
                     $mensagens[] = "A página " . $resultado['pagina'] . " está com margens de segurança abaixo do mínimo (10mm): " . implode(", ", $erros) . ".<br>";
-                } 
+                }
             }
-            if(!empty($mensagens)){
+            if (!empty($mensagens)) {
                 return $mensagens;
-            } else{
+            } else {
                 return "Todas as paginas estão com a margem correta";
             }
-            
+
         }
         return "Arquivo não encontrado ou inválido.";
     }
@@ -258,41 +261,41 @@ class Functions
             if (!$pdfArquivo) {
                 return "Erro ao localizar o arquivo.";
             }
-    
+
             $pdfArquivo = str_replace('\\', '/', $pdfArquivo);
             $comando = '"C:\poppler-24.08.0\Library\bin\pdfinfo.exe" ' . escapeshellarg($pdfArquivo) . ' 2>&1';
             exec($comando, $saida, $retorno);
-    
+
             if ($retorno !== 0) {
                 return "Erro ao executar comando: " . implode("\n", $saida);
             }
-    
+
             $mensagens = [];
             foreach ($saida as $linha) {
                 // Procura por número de páginas
                 if (stripos($linha, "Pages:") === 0) {
                     $partes = preg_split('/\s+/', $linha);
                     if (isset($partes[1])) {
-                        $mensagens['pagina'] = (int)$partes[1];
+                        $mensagens['pagina'] = (int) $partes[1];
                     }
                 }
                 // Procura pelo tamanho da página
                 if (stripos($linha, "Page size:") === 0) {
                     $partes = preg_split('/\s+/', $linha);
                     if (isset($partes[2]) && isset($partes[4])) {
-                        $mensagens['size'] = round((float)$partes[2] * 25.4/72) . ' x ' . round((float)$partes[4] * 25.4/72,1) .' mm';
+                        $mensagens['size'] = round((float) $partes[2] * 25.4 / 72, 1) . ' x ' . round((float) $partes[4] * 25.4 / 72, 1) . ' mm';
                     }
                 }
             }
-    
+
             return $mensagens;
         } else {
             return "Arquivo inválido ou não enviado.";
         }
     }
-    
-    
-    
+
+
+
     public static function verificar_resolucao($uploaded_file)
     {
         if (isset($uploaded_file['file']) && file_exists($uploaded_file['file'])) {
@@ -431,11 +434,84 @@ class Functions
                 // Se todos os itens forem "cmyk", retorna sucesso
                 return "Todos os textos estão em cmyk.";
             }
+        }
+    }
+
+
+    public static function verificar_fontes_preto($uploaded_file)
+    {
+        if (isset($uploaded_file['file']) && file_exists($uploaded_file['file'])) {
+            $pdfArquivo = realpath($uploaded_file['file']);
+            $pdfArquivo = str_replace(['\\', '/'], '/', $pdfArquivo);
+
+            $diretorio = str_replace(['\\', '/'], '/', __DIR__ . '/function.py');
+
+            if (!$pdfArquivo) {
+                return "Erro ao localizar o arquivo. Caminho: " . $pdfArquivo;
+            }
+
+            $comando = 'C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python313\\python.exe ' . $diretorio . ' ' . $pdfArquivo . ' 2>&1';
+            exec(str_replace(['\\', '/'], '/', $comando), $saida, $retorno);
+
+            if ($retorno !== 0) {
+                return "Erro ao executar o comando. Saída: " . implode("\n", $saida) . "<br>" . $comando;
+            }
+
+            $resultadosAgrupados = [];
+
+            foreach ($saida as $index => $linha) {
+                if (strpos($linha, 'colourspace="DeviceCMYK"') !== false) {
+                    if (preg_match('/ncolour="\((.*?)\)"/', $linha, $matches)) {
+                        $pagina = null;
+                        $textbox = null;
+
+                        for ($i = $index - 1; $i >= 0; $i--) {
+                            $linhaAnterior = $saida[$i];
+                            $partesAnterior = preg_split('/\s+/', trim($linhaAnterior));
+
+                            if (!$pagina && isset($partesAnterior[0]) && strtolower($partesAnterior[0]) === '<page') {
+                                $pagina = $partesAnterior[1];
+                            }
+
+                            if (!$textbox && isset($partesAnterior[0]) && strtolower($partesAnterior[0]) === '<textbox') {
+                                $textbox = $partesAnterior[1];
+                            }
+
+                            if ($pagina && $textbox) {
+                                break;
+                            }
+                        }
+
+                        $valoresCMYK = array_map('floatval', explode(', ', $matches[1]));
+                        list($c, $m, $y, $k) = $valoresCMYK + [0, 0, 0, 0];
+
+                        $isPretoPuro = ($c === 0.0 && $m === 0.0 && $y === 0.0 && $k > 0.0);
+                        $isQuasePreto = ($c <= 0.4 && $m <= 0.4 && $y <= 0.4 && $k > 0.9);
+
+                        if ($isQuasePreto && !$isPretoPuro) {
+                            $chave = "Página: $pagina | Textbox: $textbox";
+                            if (!isset($resultadosAgrupados[$chave])) {
+                                $resultadosAgrupados[$chave] = 0;
+                            }
+                            $resultadosAgrupados[$chave]++;
+                        }
+                    }
+                }
+            }
+
+            if (!empty($resultadosAgrupados)) {
+                $mensagens = [];
+                foreach ($resultadosAgrupados as $chave => $quantidade) {
+                    $mensagens[] = "Encontrado $quantidade fonte(s) que não estão em preto puro em $chave.";
+                }
+                return $mensagens;
+            } else {
+                return "Não foram encontrados valores CMYK.";
+            }
         } else {
             return "Nenhum arquivo válido foi enviado.";
         }
     }
-
 
 
 

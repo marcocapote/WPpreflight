@@ -18,6 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
         $corfonte = Functions::verificar_fontes($uploaded_file);
         $margemlombo = $isColaChecked ? Functions::verificar_margem_lombo($uploaded_file) : null; // Apenas se "cola" estiver marcada
         $margemseguranca = Functions::verificar_margem_demais_casos($uploaded_file);
+        $fontepretopagina = Functions::verificar_fontes_preto($uploaded_file);
     }
 }
 
@@ -48,19 +49,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
         <div class="row">
             <div class="col">
                 <div class="container text-center">
-                    <h3>Preflight </h3>
+                    <h3>Preflight</h3>
                 </div>
             </div>
         </div>
-        <div class="row rounded-top pt-3 bg-light">
+        <div class="row rounded-top pt-3 bg-light pb-3">
             <div class="col">
                 <div class="container mt-2">
-                    <h2>Upload PDF</h2>
+                    <h2 class="">Upload PDF</h2>
                     <form action="" method="post" enctype="multipart/form-data">
-                        <label for="file">Upload PDF</label>
-                        <input type="file" id="file" name="file">
-
-                        <label for="cola">Material colado</label>
+                        <label for="file">Escolha o pdf do material</label>
+                        <input type="file" id="file" name="file" accept=".pdf">
+                        <br>        
+                        <label for="cola">Lombo feito com cola</label>
                         <input type="checkbox" name="cola" id="">
                         <br>
 
@@ -69,12 +70,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                 </div>
             </div>
             <div class="col pt-5">
+                <br>
                 <div class="text">Quantidade de paginas: <?php echo $quantidade['pagina'] ?? '' ?></div>
                 <div class="text">Tamanho do arquivo: <?php echo $quantidade['size'] ?? '' ?> </div>
             </div>
         </div>
         <div class="row bg-light ">
-            <div class="col">
+            <div class="col border-top">
                 <div class="container pt-3 pb-2">
                     <?php
                     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
@@ -94,7 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                             ],
                             'lista-cor-fonte' => [
                                 'data' => $corfonte ?? null,
-                                'mensagem' => 'caixas de texto que não estão em cmyk',
+                                'mensagem' => 'caixas de texto que não estão em cmyk ',
                             ],
                             'lista-margem-lombo' => [
                                 'data' => $margemlombo ?? null,
@@ -104,13 +106,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                                 'data' => $margemseguranca ?? null,
                                 'mensagem' => 'paginas estão sem a margem de segurança'
                             ],
+                            'lista-fonte-preto' => [
+                                'data' => $fontepretopagina ?? null,
+                                'mensagem' => 'caixas de texto que não estão em preto',
+                            ],
                         ];
                         // Iterar sobre os dados
                         foreach ($checks as $nomeLista => $info) {
                             if (isset($info['data']) && is_array($info['data'])) {
                                 echo "<h5><a href='#' class='text-danger funcao-alternar' alternar-nome='{$nomeLista}'>Foram encontradas " . count($info['data']) . " {$info['mensagem']}</a></h5>";
                             } else {
-                                echo "<h5 class='text-success'>" . ($info['data'] ?? 'Tudo OK') . "</h5>";
+                                echo "<h5 class='text-success'>" . ($info['data'] ?? '') . "</h5>";
                             }
                         }
                     }
@@ -195,6 +201,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                     }
                     ?>
                 </div>
+                <div class="container pt-3 bg-light pb-3" id="lista-fonte-preto" style="display: none;">
+                    <?php
+                    if (!empty($fontepretopagina) && is_array($fontepretopagina)) {
+                        echo "<table class='table table-striped table-bordered'>";
+                        echo "<thead><tr><th>Caixas de texto não em preto</th></tr></thead><tbody>";
+                        foreach ($fontepretopagina as $fonte) {
+                            echo "<tr><td>{$fonte}</td></tr>";
+                        }
+                        echo "</tbody></table>";
+                    }
+                    ?>
 
             </div>
         </div>

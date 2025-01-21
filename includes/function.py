@@ -16,7 +16,7 @@ with open(sys.argv[1], 'rb') as in_fp:
 
     with contextlib.closing(converter) as device:
         interpreter = PDFPageInterpreter(rsc_mgr, device)
-        for page in PDFPage.get_pages(in_fp):
+        for page in PDFPage.get_pages(in_fp, maxpages=2):  # Process only the first page
             interpreter.process_page(page)
 
     print(out_fp.getvalue().decode('UTF-8'))
