@@ -513,6 +513,59 @@ class Functions
         }
     }
 
+    public static function java($uploaded_file) {
+        if (isset($uploaded_file['file']) && file_exists($uploaded_file['file'])) {
+            $pdfArquivo = realpath($uploaded_file['file']);
+            $pdfArquivo = str_replace(['\\', '/'], '/', $pdfArquivo);
+    
+            $diretorio = str_replace(['\\', '/'], '/', __DIR__ . '/preflight.jar');
+    
+            if (!$pdfArquivo) {
+                return "Erro ao localizar o arquivo. Caminho: " . $pdfArquivo;
+            }
+    
+            $comando = 'java -jar ' . $diretorio . ' ' . $pdfArquivo . ' 2>&1';
+            exec(str_replace(['\\', '/'], '/', $comando), $saida, $retorno);
+    
+            $mensagens = [];
+            $paginaAtual = null;
+    
+            foreach ($saida as $linha) {
+                // Verifica se a linha indica uma nova página
+                if (strpos($linha, 'Fill Path detected on page:') !== false || strpos($linha, 'Stroke Path detected on page:') !== false) {
+                    preg_match('/page: (\d+)/', $linha, $matches);
+                    if (isset($matches[1])) {
+                        $paginaAtual = $matches[1];
+                    }
+                }
+    
+                // Verifica se a linha contém informações sobre o espaço de cores
+                if (strpos($linha, 'Fill Color Space:') !== false || strpos($linha, 'Stroke Color Space:') !== false) {
+                    preg_match('/Color Space: (\w+)/', $linha, $matches);
+                    if (isset($matches[1]) && strtolower($matches[1]) !== 'devicegray') {
+                        $mensagens[] = "Encontrado elemento gráfico na página $paginaAtual, com um formato de cores diferente de Gray: " . $matches[1];
+                    }
+                }
+    
+                // Verifica se a linha pede para digitar 'next' ou 'exit'
+                if (strpos($linha, 'Digite \'next\' para processar as próximas') !== false) {
+                    // Envia o comando 'next' para continuar o processamento
+                    exec('next');
+                }
+            }
+    
+            if (!empty($mensagens)) {
+                return $mensagens;
+            } else {
+                return "Todos os elementos gráficos estão em DeviceGray.";
+            }
+        } else {
+            return "Arquivo não encontrado.";
+        }
+    }
+    
+
+
 
 
 }

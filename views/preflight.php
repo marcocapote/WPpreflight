@@ -11,14 +11,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
         echo 'Erro no upload: ' . $uploaded_file['error'];
     } else {
         // Processa o arquivo apenas se o upload foi bem-sucedido
-        $coresimagem = Functions::verificar_cores_paginas($uploaded_file);
-        $sangra = Functions::verificar_sangra($uploaded_file);
-        $resolucao = Functions::verificar_resolucao($uploaded_file);
-        $quantidade = Functions::verificar_qtd_paginas($uploaded_file);
-        $corfonte = Functions::verificar_fontes($uploaded_file);
-        $margemlombo = $isColaChecked ? Functions::verificar_margem_lombo($uploaded_file) : null; // Apenas se "cola" estiver marcada
-        $margemseguranca = Functions::verificar_margem_demais_casos($uploaded_file);
-        $fontepretopagina = Functions::verificar_fontes_preto($uploaded_file);
+        // $coresimagem = Functions::verificar_cores_paginas($uploaded_file);
+         $sangra = Functions::verificar_sangra($uploaded_file);
+        // $resolucao = Functions::verificar_resolucao($uploaded_file);
+        // $quantidade = Functions::verificar_qtd_paginas($uploaded_file);
+        // $corfonte = Functions::verificar_fontes($uploaded_file);
+        // $margemlombo = $isColaChecked ? Functions::verificar_margem_lombo($uploaded_file) : null; // Apenas se "cola" estiver marcada
+        // $margemseguranca = Functions::verificar_margem_demais_casos($uploaded_file);
+        // $fontepretopagina = Functions::verificar_fontes_preto($uploaded_file);
+        $java = Functions::java($uploaded_file);
     }
 }
 
@@ -109,6 +110,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                             'lista-fonte-preto' => [
                                 'data' => $fontepretopagina ?? null,
                                 'mensagem' => 'caixas de texto que não estão em preto',
+                            ],
+                            'lista-java' => [
+                                'data' => $java ?? null,
+                                'mensagem' => 'java',
                             ],
                         ];
                         // Iterar sobre os dados
@@ -214,6 +219,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                     ?>
 
             </div>
+
+            <div class="container pt-3 bg-light pb-3" id="lista-fonte-preto" style="display: block;">
+                <?php
+                if (!empty($java) && is_array($java)) {
+                    echo "<table class='table table-striped table-bordered'>";
+                    echo "<thead><tr><th>Caixas de texto não em preto</th></tr></thead><tbody>";
+                    foreach ($java as $elements) {
+                        echo "<tr><td>{$elements}</td></tr>";
+                    }
+                    echo "</tbody></table>";
+                } else{
+                    echo "<h5 class='text-success'>Não é uma array</h5>";
+                }
+                ?>
+
         </div>
 
 
