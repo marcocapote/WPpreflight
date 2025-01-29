@@ -526,7 +526,8 @@ class Functions
     
             $comando = 'java -jar ' . $diretorio . ' ' . $pdfArquivo . ' 2>&1';
             exec(str_replace(['\\', '/'], '/', $comando), $saida, $retorno);
-    
+            
+
             $mensagens = [];
             $paginaAtual = null;
     
@@ -548,7 +549,7 @@ class Functions
                 }
     
                 // Verifica se a linha pede para digitar 'next' ou 'exit'
-                if (strpos($linha, 'Digite \'next\' para processar as próximas') !== false) {
+                if (strpos($linha, 'Digite') !== false) {
                     // Envia o comando 'next' para continuar o processamento
                     exec('next');
                 }

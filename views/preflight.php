@@ -11,15 +11,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
         echo 'Erro no upload: ' . $uploaded_file['error'];
     } else {
         // Processa o arquivo apenas se o upload foi bem-sucedido
-        // $coresimagem = Functions::verificar_cores_paginas($uploaded_file);
+         $coresimagem = Functions::verificar_cores_paginas($uploaded_file);
          $sangra = Functions::verificar_sangra($uploaded_file);
-        // $resolucao = Functions::verificar_resolucao($uploaded_file);
-        // $quantidade = Functions::verificar_qtd_paginas($uploaded_file);
-        // $corfonte = Functions::verificar_fontes($uploaded_file);
+         $resolucao = Functions::verificar_resolucao($uploaded_file);
+         $quantidade = Functions::verificar_qtd_paginas($uploaded_file);
+         //$corfonte = Functions::verificar_fontes($uploaded_file);
         // $margemlombo = $isColaChecked ? Functions::verificar_margem_lombo($uploaded_file) : null; // Apenas se "cola" estiver marcada
-        // $margemseguranca = Functions::verificar_margem_demais_casos($uploaded_file);
-        // $fontepretopagina = Functions::verificar_fontes_preto($uploaded_file);
-        $java = Functions::java($uploaded_file);
+         $margemseguranca = Functions::verificar_margem_demais_casos($uploaded_file);
+         //$fontepretopagina = Functions::verificar_fontes_preto($uploaded_file);
+         $java = Functions::java($uploaded_file);
     }
 }
 
@@ -220,11 +220,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
 
             </div>
 
-            <div class="container pt-3 bg-light pb-3" id="lista-fonte-preto" style="display: block;">
+            <div class="container pt-3 bg-light pb-3" id="lista-java" style="display: none;">
                 <?php
                 if (!empty($java) && is_array($java)) {
                     echo "<table class='table table-striped table-bordered'>";
-                    echo "<thead><tr><th>Caixas de texto não em preto</th></tr></thead><tbody>";
+                    echo "<thead><tr><th>Elementos detectador pelo arquivo .jar</th></tr></thead><tbody>";
                     foreach ($java as $elements) {
                         echo "<tr><td>{$elements}</td></tr>";
                     }
