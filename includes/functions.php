@@ -346,173 +346,7 @@ class Functions
             return "Nenhum arquivo válido foi enviado.";
         }
     }
-    public static function verificar_fontes($uploaded_file)
-    {
-        if (isset($uploaded_file['file']) && file_exists($uploaded_file['file'])) {
-            // Caminho absoluto do arquivo enviado
-            $pdfArquivo = realpath($uploaded_file['file']);
-            $pdfArquivo = str_replace(['\\', '/'], '/', $pdfArquivo);
-
-            // Obtém o caminho absoluto do script Python
-            $diretorio = __DIR__ . '/function.py';
-
-            // Substituir todas as barras invertidas e normais para um formato padronizado
-            $diretorio = str_replace(['\\', '/'], '/', $diretorio);
-
-            // Verifica se o caminho do arquivo foi resolvido corretamente
-            if (!$pdfArquivo) {
-                return "Erro ao localizar o arquivo. Caminho: " . $pdfArquivo;
-            }
-
-            // Monta o comando para executar o script Python
-            $comando = 'C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python313\\python.exe ' . $diretorio . ' ' . $pdfArquivo . ' 2>&1';
-
-            // Executa o comando
-            exec(str_replace(['\\', '/'], '/', $comando), $saida, $retorno);
-
-            // Verifica se o comando foi executado com sucesso
-            if ($retorno !== 0) {
-                return "Erro ao executar o comando. Saída: " . implode("\n", $saida) . "<br>" . $comando;
-            }
-
-            $resultados = [];
-            foreach ($saida as $index => $linha) {
-                // Ignora a primeira linha (cabeçalho)
-                if ($index === 0) {
-                    continue;
-                }
-
-                // Quebra a linha em partes
-                $partes = preg_split('/\s+/', trim($linha));
-
-                // Verifica se o item é `devicecmyk`
-                if (isset($partes[5]) && strtolower($partes[3]) !== 'colourspace="devicecmyk"') {
-                    $pagina = null;
-                    $textbox = null;
-
-                    // Busca para cima no arquivo
-                    for ($i = $index - 1; $i >= 0; $i--) {
-                        $linhaAnterior = $saida[$i];
-                        $partesAnterior = preg_split('/\s+/', trim($linhaAnterior));
-
-                        // Verifica se a linha começa com `<page>`
-                        if (!$pagina && isset($partesAnterior[0]) && strtolower($partesAnterior[0]) === '<page') {
-                            $pagina = $partesAnterior[1]; // Salva o valor [1] da linha `<page>`
-                        }
-
-                        // Verifica se a linha começa com `<textbox>`
-                        if (!$textbox && isset($partesAnterior[0]) && strtolower($partesAnterior[0]) === '<textbox') {
-                            $textbox = $partesAnterior[1]; // Salva o valor [1] da linha `<textbox>`
-                        }
-
-                        // Se ambos foram encontrados, não é necessário continuar
-                        if ($pagina && $textbox) {
-                            break;
-                        }
-                    }
-
-                    // Agrupa resultados por `textbox`
-                    if ($textbox) {
-                        $chave = "Textbox ID: $textbox, Página: $pagina";
-                        if (!isset($resultados[$chave])) {
-                            $resultados[$chave] = [];
-                        }
-                        if (!in_array($partes[3], $resultados[$chave])) {
-                            $resultados[$chave][] = $partes[3]; // Adiciona o formato encontrado
-                        }
-                    }
-                }
-            }
-
-            if (!empty($resultados)) {
-                $mensagens = [];
-                foreach ($resultados as $chave => $formatos) {
-                    $mensagens[] = "$chave contém formatos não CMYK: " . implode(', ', $formatos) . "<br>";
-                }
-                return $mensagens;
-            } else {
-                // Se todos os itens forem "cmyk", retorna sucesso
-                return "Todos os textos estão em cmyk.";
-            }
-        }
-    }
-
-
-    public static function verificar_fontes_preto($uploaded_file)
-    {
-        if (isset($uploaded_file['file']) && file_exists($uploaded_file['file'])) {
-            $pdfArquivo = realpath($uploaded_file['file']);
-            $pdfArquivo = str_replace(['\\', '/'], '/', $pdfArquivo);
-
-            $diretorio = str_replace(['\\', '/'], '/', __DIR__ . '/function.py');
-
-            if (!$pdfArquivo) {
-                return "Erro ao localizar o arquivo. Caminho: " . $pdfArquivo;
-            }
-
-            $comando = 'C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python313\\python.exe ' . $diretorio . ' ' . $pdfArquivo . ' 2>&1';
-            exec(str_replace(['\\', '/'], '/', $comando), $saida, $retorno);
-
-            if ($retorno !== 0) {
-                return "Erro ao executar o comando. Saída: " . implode("\n", $saida) . "<br>" . $comando;
-            }
-
-            $resultadosAgrupados = [];
-
-            foreach ($saida as $index => $linha) {
-                if (strpos($linha, 'colourspace="DeviceCMYK"') !== false) {
-                    if (preg_match('/ncolour="\((.*?)\)"/', $linha, $matches)) {
-                        $pagina = null;
-                        $textbox = null;
-
-                        for ($i = $index - 1; $i >= 0; $i--) {
-                            $linhaAnterior = $saida[$i];
-                            $partesAnterior = preg_split('/\s+/', trim($linhaAnterior));
-
-                            if (!$pagina && isset($partesAnterior[0]) && strtolower($partesAnterior[0]) === '<page') {
-                                $pagina = $partesAnterior[1];
-                            }
-
-                            if (!$textbox && isset($partesAnterior[0]) && strtolower($partesAnterior[0]) === '<textbox') {
-                                $textbox = $partesAnterior[1];
-                            }
-
-                            if ($pagina && $textbox) {
-                                break;
-                            }
-                        }
-
-                        $valoresCMYK = array_map('floatval', explode(', ', $matches[1]));
-                        list($c, $m, $y, $k) = $valoresCMYK + [0, 0, 0, 0];
-
-                        $isPretoPuro = ($c === 0.0 && $m === 0.0 && $y === 0.0 && $k > 0.0);
-                        $isQuasePreto = ($c <= 0.4 && $m <= 0.4 && $y <= 0.4 && $k > 0.9);
-
-                        if ($isQuasePreto && !$isPretoPuro) {
-                            $chave = "Página: $pagina | Textbox: $textbox";
-                            if (!isset($resultadosAgrupados[$chave])) {
-                                $resultadosAgrupados[$chave] = 0;
-                            }
-                            $resultadosAgrupados[$chave]++;
-                        }
-                    }
-                }
-            }
-
-            if (!empty($resultadosAgrupados)) {
-                $mensagens = [];
-                foreach ($resultadosAgrupados as $chave => $quantidade) {
-                    $mensagens[] = "Encontrado $quantidade fonte(s) que não estão em preto puro em $chave.";
-                }
-                return $mensagens;
-            } else {
-                return "Não foram encontrados valores CMYK.";
-            }
-        } else {
-            return "Nenhum arquivo válido foi enviado.";
-        }
-    }
-
+ 
     public static function java($uploaded_file) {
         if (isset($uploaded_file['file']) && file_exists($uploaded_file['file'])) {
             $pdfArquivo = realpath($uploaded_file['file']);
@@ -524,7 +358,7 @@ class Functions
                 return "Erro ao localizar o arquivo. Caminho: " . $pdfArquivo;
             }
     
-            $comando = 'java -jar ' . $diretorio . ' ' . $pdfArquivo . ' 2>&1';
+            $comando = 'java -jar ' . $diretorio . ' ' . $pdfArquivo . ' graphic 2>&1';
             exec(str_replace(['\\', '/'], '/', $comando), $saida, $retorno);
             
 
@@ -566,6 +400,53 @@ class Functions
     }
     
 
+
+    public static function javaFontes($uploaded_file) {
+        if (isset($uploaded_file['file']) && file_exists($uploaded_file['file'])) {
+            $pdfArquivo = realpath($uploaded_file['file']);
+            $pdfArquivo = str_replace(['\\', '/'], '/', $pdfArquivo);
+            
+            $diretorio = str_replace(['\\', '/'], '/', __DIR__ . '/preflight.jar');
+    
+            if (!$pdfArquivo) {
+                return "Erro ao localizar o arquivo. Caminho: " . $pdfArquivo;
+            }
+    
+            $comando = 'java -jar ' . $diretorio . ' ' . $pdfArquivo . ' fonts 2>&1';
+            exec(str_replace(['\\', '/'], '/', $comando), $saida, $retorno);
+    
+            $mensagens = [];
+    
+            foreach ($saida as $linha) {
+                // Divide a linha por espaços em branco
+                $partes = preg_split('/\s+/', $linha);
+    
+                // Extrai as informações relevantes
+                $pagina = $partes[1]; // Número da página
+                $cor = $partes[4]; // Tipo de cor (DeviceRGB, DeviceCMYK, etc.)
+                //  $valoresCor = trim($partes[5], '[]'); // Valores numéricos das cores
+                //  $fontes = isset($partes[7]) ? trim($partes[7], '[]') : ''; // Fontes utilizadas
+                
+                if($partes[0] == 'Pagina:'){
+                    // Se não for DeviceCMYK, adicionar à lista de mensagens
+                    if (strtolower($cor) !== 'devicegray' && strtolower($cor) !== 'devicecmyk' && strtolower($cor) !== 'iccbased') {
+                        $mensagens[] = "Encontrada fonte na página $pagina, com formato de cor diferente de CMYK: $cor";
+                    }
+                }
+
+                
+            }
+    
+            if (!empty($mensagens)) {
+                return $mensagens;
+            } else {
+                return $partes[0];
+            }
+        } else {
+            return "Arquivo não encontrado.";
+        }
+    }
+    
 
 
 

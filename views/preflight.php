@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
          $sangra = Functions::verificar_sangra($uploaded_file);
          $resolucao = Functions::verificar_resolucao($uploaded_file);
          $quantidade = Functions::verificar_qtd_paginas($uploaded_file);
-         //$corfonte = Functions::verificar_fontes($uploaded_file);
+         $corfonte = Functions::javaFontes($uploaded_file);
         // $margemlombo = $isColaChecked ? Functions::verificar_margem_lombo($uploaded_file) : null; // Apenas se "cola" estiver marcada
          $margemseguranca = Functions::verificar_margem_demais_casos($uploaded_file);
          //$fontepretopagina = Functions::verificar_fontes_preto($uploaded_file);
