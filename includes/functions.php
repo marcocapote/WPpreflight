@@ -294,58 +294,57 @@ class Functions
         }
     }
 
-
-
-    public static function verificar_resolucao($uploaded_file)
-    {
+    public static function java_verificar_resolucao($uploaded_file) {
         if (isset($uploaded_file['file']) && file_exists($uploaded_file['file'])) {
-            // Caminho absoluto do arquivo enviado
             $pdfArquivo = realpath($uploaded_file['file']);
-            $pdfArquivo = str_replace('\\', '/', $pdfArquivo);
-
-            // Verifica se o caminho do arquivo foi resolvido corretamente
+            $pdfArquivo = str_replace(['\\', '/'], '/', $pdfArquivo);
+    
+            $diretorio = str_replace(['\\', '/'], '/', __DIR__ . '/preflight.jar');
+    
             if (!$pdfArquivo) {
-                return "Erro ao localizar o arquivo. " . $pdfArquivo;
+                return "Erro ao localizar o arquivo. Caminho: " . $pdfArquivo;
             }
-
-            // Comando Ghostscript para contar as páginas do PDF
-            $comando = '"C:\poppler-24.08.0\Library\bin\pdfimages.exe" -list ' . $pdfArquivo . ' 2>&1';
+    
+            // Comando para executar o Java Preflight
+            $comando = 'java -jar ' . escapeshellarg($diretorio) . ' ' . escapeshellarg($pdfArquivo) . ' image 2>&1';
             exec($comando, $saida, $retorno);
-
-            // Verifica se o comando foi executado com sucesso
+    
+            // Verifica se a execução falhou
             if ($retorno !== 0) {
-                return "Erro ao executar o comando Ghostscript. Comando: " . implode("\n", $saida);
+                return "Erro ao executar o preflight.jar. Código de retorno: $retorno. Saída: " . implode("\n", $saida);
             }
+    
+            // Depuração: Mostra a saída capturada
+            error_log("Saída do Preflight: " . print_r($saida, true));
+    
             $mensagens = [];
-            // Variável para rastrear se algum item não está em "cmyk"
-            foreach ($saida as $index => $linha) {
-                // Ignora a primeira linha (cabeçalho)
-                if ($index === 0) {
-                    continue; // Pula a primeira linha
-                }
-
-                // Quebra a linha em partes
-                $partes = preg_split('/\s+/', trim($linha)); // Divide a linha por espaços
-
-                // Verifica se temos pelo menos 6 itens na linha
-                if (isset($partes[12])) {
-                    // Verifica se o 6º item é diferente de "cmyk"
-                    if (intval($partes[12]) < 300) {
-                        $mensagens[] = "Encontrado imagem na pagina " . ($partes[0]) . " que esta com a resolução abaixo do recomendado (300dpi). Resolução encontrada: " . $partes[12] . "dpi <br>";
+            foreach ($saida as $linha) {
+                // Expressão regular corrigida para capturar número da página e DPI
+                if (preg_match('/Pagina:\s*(\d+)\s*Resolucao:\s*(-?\d+)dpi/i', $linha, $matches)) {
+                    $pagina = isset($matches[1]) ? intval($matches[1]) : 0;
+                    $resolucao = isset($matches[2]) ? intval($matches[2]) : 0;
+                
+                    // Depuração: Mostra os valores capturados
+                    error_log("Página: $pagina | Resolução: $resolucao dpi");
+                
+                    if ($resolucao < 300) {
+                        $mensagens[] = "Página $pagina contém imagem com resolução abaixo do recomendado: {$resolucao}dpi.<br>";
                     }
                 }
+                
             }
+    
             if (!empty($mensagens)) {
                 return $mensagens;
             } else {
-                // Se todos os itens forem "cmyk", retorna sucesso
-                return "Todas as imagens estão com a resolução correta.";
+                return "Todos os elementos gráficos estão com a devida resolução.";
             }
-
         } else {
-            return "Nenhum arquivo válido foi enviado.";
+            return "Arquivo não encontrado.";
         }
     }
+    
+
  
     public static function java($uploaded_file) {
         if (isset($uploaded_file['file']) && file_exists($uploaded_file['file'])) {
@@ -399,8 +398,6 @@ class Functions
         }
     }
     
-
-
     public static function javaFontes($uploaded_file) {
         if (isset($uploaded_file['file']) && file_exists($uploaded_file['file'])) {
             $pdfArquivo = realpath($uploaded_file['file']);
