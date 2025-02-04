@@ -1,117 +1,83 @@
 <?php
 class Functions
 {
-    public static function verificar_cores_paginas($uploaded_file)
-    {
-        // Verifica se o arquivo foi enviado corretamente
-        if (isset($uploaded_file['file']) && file_exists($uploaded_file['file'])) {
-            // Caminho absoluto do arquivo enviado
-            $pdfArquivo = realpath($uploaded_file['file']);
-            $pdfArquivo = str_replace('\\', '/', $pdfArquivo);
-            // Verifica se o caminho do arquivo foi resolvido corretamente
-            if (!$pdfArquivo) {
-                return "Erro ao localizar o arquivo. " . $pdfArquivo;
-            }
-            // Comando Ghostscript para contar as páginas do PDF
-            $comando = '"C:\poppler-24.08.0\Library\bin\pdfimages.exe" -list ' . $pdfArquivo . ' 2>&1';
-            exec($comando, $saida, $retorno);
 
-            // Verifica se o comando foi executado com sucesso
-            if ($retorno !== 0) {
-                return "Erro ao executar o comando Ghostscript. Comando: " . implode("\n", $saida);
-            }
-            $mensagens = [];
-            // Variável para rastrear se algum item não está em "cmyk"
-            foreach ($saida as $index => $linha) {
-                // Ignora a primeira linha (cabeçalho)
-                if ($index === 0) {
-                    continue; // Pula a primeira linha
-                }
-
-                // Quebra a linha em partes
-                $partes = preg_split('/\s+/', trim($linha)); // Divide a linha por espaços
-
-                // Verifica se temos pelo menos 6 itens na linha
-                if (isset($partes[5])) {
-                    // Verifica se o 6º item é diferente de "cmyk"
-                    if (strtolower($partes[5]) !== "cmyk") {
-                        $mensagens[] = "Encontrado imagem na pagina " . ($partes[0]) . " que não está em cmyk. Formato encontrado: " . $partes[5] . "<br>";
-                    }
-                }
-            }
-            if (!empty($mensagens)) {
-                return $mensagens;
-            } else {
-                // Se todos os itens forem "cmyk", retorna sucesso
-                return "Todas as imagens estão em cmyk.";
-            }
-
-        } else {
-            return "Nenhum arquivo válido foi enviado.";
-        }
-    }
-    public static function verificar_sangra($uploaded_file)
-    {
+    public static function verificar_sangra($uploaded_file) {
         if (isset($uploaded_file['file']) && file_exists($uploaded_file['file'])) {
             $pdfArquivo = realpath($uploaded_file['file']);
             $pdfArquivo = str_replace('\\', '/', $pdfArquivo);
             $numPages = Functions::verificar_qtd_paginas($uploaded_file);
             $sangras = [];
-            $trims = [];
             $resultados = [];
-            // Verifica se o caminho do arquivo foi resolvido corretamente
+    
+            $diretorio = str_replace(['\\', '/'], '/', __DIR__ . '/preflight.jar');
+    
             if (!$pdfArquivo) {
-                return "Erro ao localizar o arquivo. " . $pdfArquivo;
+                return "Erro ao localizar o arquivo. Caminho: " . $pdfArquivo;
             }
-
-            // Comando Ghostscript para contar as páginas do PDF
-            $comando = '"C:\poppler-24.08.0\Library\bin\pdfinfo.exe" -box -f 1 -l ' . $numPages['pagina'] . ' ' . $pdfArquivo . ' 2>&1';
+    
+            // Comando para executar o Java Preflight
+            $comando = 'java -jar ' . escapeshellarg($diretorio) . ' ' . escapeshellarg($pdfArquivo) . ' margin 2>&1';
             exec($comando, $saida, $retorno);
-
-
-            foreach ($saida as $index => $linha) {
-                $partes = preg_split('/\s+/', trim($linha)); // Divide a linha por espaços
-                // Verifica se temos pelo menos 6 itens na linha
-                if (isset($partes[2]) && $partes[2] === "BleedBox:") {
-                    $sangraPagina = [$partes[3], $partes[4], $partes[5], $partes[6]];
-
-                    array_push($sangras, $sangraPagina);
-                    // return " numero de paginas: ". $numPages . ' ' . $partes[1] . ' ' . $partes[2] . ' ' . $partes[3] . ' ' . $partes[4] . ' '. $partes[5] . ' ' . $partes[6];
-                } else if (isset($partes[2]) && $partes[2] === "TrimBox:") {
-                    $trimPagina = [$partes[3], $partes[4], $partes[5], $partes[6]];
-
-                    array_push($trims, $trimPagina);
-                } else {
-                    continue;
+    
+    
+            // Parse the output
+            $currentPage = 0;
+            foreach ($saida as $linha) {
+                // Detect page numbers
+                if (str_starts_with($linha, 'Pagina: ')) {
+                    $currentPage = (int) str_replace('Pagina: ', '', $linha);
+                }
+    
+                // Parse bleed values
+                if (str_contains($linha, 'Sangria [')) {
+                    preg_match_all('/[\d,]+(?= mm)/', $linha, $matches);
+                    if (count($matches[0]) === 4) {
+                        // Convert comma decimal separator to dot and cast to float
+                        $sangras[$currentPage] = array_map(function($value) {
+                            return (float) str_replace(',', '.', $value);
+                        }, $matches[0]);
+                    }
                 }
             }
-            for ($row = 0; $row < $numPages['pagina']; $row++) {
-                $resultado = [
-                    (floatval($sangras[$row][2]) - floatval($trims[$row][2])) * (25.4 / 72),
-                    (floatval($sangras[$row][3]) - floatval($trims[$row][3])) * (25.4 / 72)
+    
+
+    
+            // Build resultados array
+            foreach ($sangras as $page => $values) {
+                $resultados[] = [
+                    'pagina' => $page,
+                    'SangraEsquerda' => $values[0],
+                    'SangraDireita' => $values[1],
+                    'SangraSuperior' => $values[2],
+                    'SangraInferior' => $values[3]
                 ];
-                array_push($resultados, $resultado);
             }
 
-            $mensagens = []; // Array para armazenar mensagens
-
-            foreach ($resultados as $index => $linha) {
-                $linha[0] = round($linha[0], 1);
-                $linha[1] = round($linha[1], 1);
-                // Verificar se algum valor é menor que 3
-                if ($linha[0] < 3 || $linha[1] < 3) {
-                    $mensagens[] = " A pagina " . ($index + 1) . " está com a sangria abaixo do mínimo (3mm): " . $linha[0] . "mm <br>";
-
-                } else if ($linha[0] < 5 || $linha[1] < 5) {
-                    $mensagens[] = " A pagina " . ($index + 1) . " está com a sangria acima do mínimo mas abaixo do recomendado (5mm): " . $linha[0] . "mm <br>";
+    
+            $mensagens = [];
+            foreach ($resultados as $resultado) {
+                $issues = [];
+    
+                // Check all four bleed values
+                foreach (['SangraEsquerda', 'SangraDireita', 'SangraSuperior', 'SangraInferior'] as $type) {
+                    $value = round($resultado[$type], 1);
+    
+                    if ($value < 3) {
+                        $issues[] = "$type: {$value}mm (abaixo do mínimo)";
+                    } elseif ($value < 5) {
+                        $issues[] = "$type: {$value}mm (abaixo do recomendado)";
+                    }
+                }
+    
+                if (!empty($issues)) {
+                    $mensagens[] = "Página {$resultado['pagina']}: " . implode(', ', $issues);
                 }
             }
-
-            if (!$mensagens) {
-                return "Todas as paginas estão com a sangra correta";
-            } else {
-                return $mensagens;
-            }
+    
+            return empty($mensagens) 
+                ? "Todas as páginas estão com sangrias corretas" 
+                : $mensagens;
         }
     }
 
@@ -359,39 +325,38 @@ class Functions
     
             $comando = 'java -jar ' . $diretorio . ' ' . $pdfArquivo . ' graphic 2>&1';
             exec(str_replace(['\\', '/'], '/', $comando), $saida, $retorno);
-            
-
+    
             $mensagens = [];
             $paginaAtual = null;
     
             foreach ($saida as $linha) {
-                // Verifica se a linha indica uma nova página
-                if (strpos($linha, 'Fill Path detected on page:') !== false || strpos($linha, 'Stroke Path detected on page:') !== false) {
-                    preg_match('/page: (\d+)/', $linha, $matches);
-                    if (isset($matches[1])) {
-                        $paginaAtual = $matches[1];
+                // Verifica imagens
+                if (preg_match('/Image detected on page: (\d+) ColorSpace: (\w+)/', $linha, $matches)) {
+                    $pagina = $matches[1];
+                    $colorSpace = $matches[2];
+                    if (strtolower($colorSpace) !== 'devicecmyk' && strtolower($colorSpace) !== 'iccbased' && strtolower($colorSpace) !== 'separation' && strtolower($colorSpace) !== 'devicegray') {
+                        $mensagens[] = "Encontrada imagem na página $pagina, com um formato de cores diferente de CMYK Formato encontrado: " . $colorSpace;
+                    }
+                }
+                // Verifica elementos gráficos (caminhos)
+                elseif (preg_match('/(Fill|Stroke) Path detected on page: (\d+) ColorSpace: (\w+)/', $linha, $matches)) {
+                    $pagina = $matches[2];
+                    $colorSpace = $matches[3];
+                    if (strtolower($colorSpace) !== 'devicecmyk' && strtolower($colorSpace) !== 'iccbased' && strtolower($colorSpace) !== 'separation' && strtolower($colorSpace) !== 'devicegray') {
+                        $mensagens[] = "Encontrado elemento gráfico na página $pagina, com um formato de cores diferente de CMYK Formato encontrado: " . $colorSpace;
                     }
                 }
     
-                // Verifica se a linha contém informações sobre o espaço de cores
-                if (strpos($linha, 'Fill Color Space:') !== false || strpos($linha, 'Stroke Color Space:') !== false) {
-                    preg_match('/Color Space: (\w+)/', $linha, $matches);
-                    if (isset($matches[1]) && strtolower($matches[1]) !== 'devicegray') {
-                        $mensagens[] = "Encontrado elemento gráfico na página $paginaAtual, com um formato de cores diferente de Gray: " . $matches[1];
-                    }
-                }
-    
-                // Verifica se a linha pede para digitar 'next' ou 'exit'
+                // Mantém o tratamento do comando 'next' se necessário
                 if (strpos($linha, 'Digite') !== false) {
-                    // Envia o comando 'next' para continuar o processamento
                     exec('next');
                 }
             }
     
             if (!empty($mensagens)) {
-                return $mensagens;
+                return $mensagens; // Remove duplicados
             } else {
-                return "Todos os elementos gráficos estão em DeviceGray.";
+                return "Todos os elementos gráficos e imagens estão em CMYK.";
             }
         } else {
             return "Arquivo não encontrado.";
@@ -437,7 +402,7 @@ class Functions
             if (!empty($mensagens)) {
                 return $mensagens;
             } else {
-                return $partes[0];
+                return "Todas as fontes estão em CMYK.";
             }
         } else {
             return "Arquivo não encontrado.";

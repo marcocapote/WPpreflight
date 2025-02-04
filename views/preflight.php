@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
         echo 'Erro no upload: ' . $uploaded_file['error'];
     } else {
         // Processa o arquivo apenas se o upload foi bem-sucedido
-         $coresimagem = Functions::verificar_cores_paginas($uploaded_file);
+        // $coresimagem = Functions::verificar_cores_paginas($uploaded_file);
          $sangra = Functions::verificar_sangra($uploaded_file);
          $resolucao = Functions::java_verificar_resolucao($uploaded_file);
          $quantidade = Functions::verificar_qtd_paginas($uploaded_file);
