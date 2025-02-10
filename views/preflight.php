@@ -17,9 +17,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
          $quantidade = Functions::verificar_qtd_paginas($uploaded_file);
          $corfonte = Functions::javaFontes($uploaded_file);
         // $margemlombo = $isColaChecked ? Functions::verificar_margem_lombo($uploaded_file) : null; // Apenas se "cola" estiver marcada
-         $margemseguranca = Functions::verificar_margem_demais_casos($uploaded_file);
+         $margemseguranca = Functions::verificar_margem($uploaded_file, $isColaChecked);
          //$fontepretopagina = Functions::verificar_fontes_preto($uploaded_file);
          $java = Functions::java($uploaded_file);
+         $fontElement = Functions::fontElement($uploaded_file);
+         $javaFontePreta = Functions::javaFontePreta($uploaded_file);
     }
 }
 
@@ -63,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                         <input type="file" id="file" name="file" accept=".pdf">
                         <br>        
                         <label for="cola">Lombo feito com cola</label>
-                        <input type="checkbox" name="cola" id="">
+                        <input type="checkbox" name="cola" id="" value="true">
                         <br>
 
                         <button type="submit" name="submit_arquivo">Enviar</button>
@@ -113,7 +115,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                             ],
                             'lista-java' => [
                                 'data' => $java ?? null,
-                                'mensagem' => 'elementos que nao estão no epaço de cores recomendado',
+                                'mensagem' => 'elementos que nao estão no espaço de cores recomendado',
+                            ],
+                            'lista-font-element' => [
+                                'data' => $fontElement ?? null,
+                                'mensagem' => 'elementos que nao estão no espaço de cores recomendado',
+                            ],
+                            'lista-java-fonte-preta' => [
+                                'data' => $javaFontePreta ?? null,
+                                'mensagem' => 'elementos que nao estão no espaço de cores recomendado',
                             ],
                         ];
                         // Iterar sobre os dados
@@ -235,9 +245,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                 ?>
 
         </div>
+        <div class="container pt-3 bg-light pb-3" id="lista-font-element" style="display: none;">
+            <?php
+            if (!empty($fontElement) && is_array($fontElement)) {
+                echo "<table class='table table-striped table-bordered'>";
+                echo "<thead><tr><th>Elementos detectador pelo arquivo .jar</th></tr></thead><tbody>";
+                foreach ($fontElement as $elements) {
+                    echo "<tr><td>{$elements}</td></tr>";
+                }
+                echo "</tbody></table>";
+            } else{
+                echo "<h5 class='text-success'>Não é uma array</h5>";
+            }
+            ?>
 
 
     </div>
+    <div class="container pt-3 bg-light pb-3" id="lista-java-fonte-preta" style="display: none;">
+        <?php
+        if (!empty($javaFontePreta) && is_array($javaFontePreta)) {
+            echo "<table class='table table-striped table-bordered'>";
+            echo "<thead><tr><th>Elementos detectador pelo arquivo .jar</th></tr></thead><tbody>";
+            foreach ($javaFontePreta as $elements) {
+                echo "<tr><td>{$elements}</td></tr>";
+            }
+            echo "</tbody></table>";
+        } else{
+            echo "<h5 class='text-success'>Não é uma array</h5>";
+        }
+        ?>
+
 </body>
 
 </html>
