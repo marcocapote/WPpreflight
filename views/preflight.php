@@ -74,8 +74,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
             </div>
             <div class="col pt-5">
                 <br>
-                <div class="text">Quantidade de paginas: <?php echo $quantidade['pagina'] ?? '' ?></div>
-                <div class="text">Tamanho do arquivo: <?php echo $quantidade['size'] ?? '' ?> </div>
+                <div class="text">Quantidade de paginas: <?php echo $quantidade['pagina'] ??  'nao encontrado' ?></div>
+                <div class="text">Tamanho do arquivo: <?php echo $quantidade['size'] ?? ' nao encontrado' ?> </div>
             </div>
         </div>
         <div class="row bg-light ">
@@ -123,7 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                             ],
                             'lista-java-fonte-preta' => [
                                 'data' => $javaFontePreta ?? null,
-                                'mensagem' => 'elementos que nao estão no espaço de cores recomendado',
+                                'mensagem' => 'fontes visualmente pretas',
                             ],
                         ];
                         // Iterar sobre os dados

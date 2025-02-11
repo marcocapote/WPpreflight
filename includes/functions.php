@@ -176,9 +176,11 @@ class Functions
             }
 
             $pdfArquivo = str_replace('\\', '/', $pdfArquivo);
-            $comando = '"C:\poppler-24.08.0\Library\bin\pdfinfo.exe" ' . escapeshellarg($pdfArquivo) . ' 2>&1';
-            exec($comando, $saida, $retorno);
+            $diretorio = str_replace(['\\', '/'], '/', __DIR__ . '/preflight.jar');
 
+            // Comando para executar o Java Preflight
+            $comando = 'java -jar ' . escapeshellarg($diretorio) . ' ' . escapeshellarg($pdfArquivo) . ' info 2>&1';
+            exec($comando, $saida, $retorno);
             if ($retorno !== 0) {
                 return "Erro ao executar comando: " . implode("\n", $saida);
             }
@@ -186,17 +188,17 @@ class Functions
             $mensagens = [];
             foreach ($saida as $linha) {
                 // Procura por número de páginas
-                if (stripos($linha, "Pages:") === 0) {
+                if (stripos($linha, "Paginas: ") === 0) {
                     $partes = preg_split('/\s+/', $linha);
                     if (isset($partes[1])) {
                         $mensagens['pagina'] = (int) $partes[1];
                     }
                 }
                 // Procura pelo tamanho da página
-                if (stripos($linha, "Page size:") === 0) {
+                if (stripos($linha, "Resolucao:") === 0) {
                     $partes = preg_split('/\s+/', $linha);
                     if (isset($partes[2]) && isset($partes[4])) {
-                        $mensagens['size'] = round((float) $partes[2] * 25.4 / 72, 1) . ' x ' . round((float) $partes[4] * 25.4 / 72, 1) . ' mm';
+                        $mensagens['size'] = $partes[1] . ' x ' . $partes[4] . ' mm';
                     }
                 }
             }
@@ -409,7 +411,7 @@ class Functions
             if (!empty($mensagens)) {
                 return $mensagens;
             } else {
-                return "Todas as fontes estão em CMYK.";
+                return "Todas os elementos de texto aparecerão na impressao";
             }
         } else {
             return "Arquivo não encontrado.";
