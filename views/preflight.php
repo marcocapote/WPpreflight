@@ -123,7 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                             ],
                             'lista-java-fonte-preta' => [
                                 'data' => $javaFontePreta ?? null,
-                                'mensagem' => 'fontes visualmente pretas',
+                                'mensagem' => 'fontes visualmente pretas manchadas com outras cores',
                             ],
                         ];
                         // Iterar sobre os dados
@@ -265,7 +265,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
         <?php
         if (!empty($javaFontePreta) && is_array($javaFontePreta)) {
             echo "<table class='table table-striped table-bordered'>";
-            echo "<thead><tr><th>Elementos detectador pelo arquivo .jar</th></tr></thead><tbody>";
+            echo "<thead><tr><th>Elementos detectados pelo arquivo .jar</th></tr></thead><tbody>";
             foreach ($javaFontePreta as $elements) {
                 echo "<tr><td>{$elements}</td></tr>";
             }

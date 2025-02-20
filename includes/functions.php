@@ -91,38 +91,40 @@ class Functions
     public static function verificar_margem($uploaded_file, $isColaChecked)
     {
         $pdfInfo = self::getPdfInfo($uploaded_file);
-        if (isset($pdfInfo['error']))
+        if (isset($pdfInfo['error'])) {
             return $pdfInfo['error'];
-
+        }
+    
         $saida = self::runJavaCommand($pdfInfo['path'], $pdfInfo['dir'], 'marginSafety');
-        if (!$saida)
+        if (!$saida) {
             return "Erro na execução do preflight.";
-
-        $numPages = Functions::verificar_qtd_paginas($uploaded_file);
-        foreach ($saida as $linha) {
+        }
+    
+        // Aqui iremos montar o array $resultados com os dados de cada página
+        $resultados = [];
+        foreach ($saida as $index => $linha) {
             $partes = preg_split('/\s+/', trim($linha));
+            // Verifica se os dados necessários existem na linha
             if (isset($partes[13])) {
-                $pagina = $partes[1];
+                // Se a variável $partes[1] não for o número correto da página, usamos o índice do loop + 1
+                $pagina = $index + 1;
                 $margemEsquerda = str_replace(',', '.', $partes[4]);
                 $margemDireita = str_replace(',', '.', $partes[7]);
                 $margemSuperior = str_replace(',', '.', $partes[10]);
                 $margemInferior = str_replace(',', '.', $partes[13]);
-
+    
+                $resultados[] = [
+                    'pagina' => $pagina,
+                    'margemEsquerda' => round($margemEsquerda, 1),
+                    'margemDireita' => round($margemDireita, 1),
+                    'margemSuperior' => round($margemSuperior, 1),
+                    'margemInferior' => round($margemInferior, 1)
+                ];
             }
         }
-
-        for ($row = 0; $row < $numPages['pagina']; $row++) {
-            $resultados[] = [
-                'pagina' => $pagina,
-                'margemEsquerda' => round($margemEsquerda, 1),
-                'margemDireita' => round($margemDireita, 1),
-                'margemSuperior' => round($margemSuperior, 1),
-                'margemInferior' => round($margemInferior, 1)
-            ];
-        }
-
+    
         $mensagens = [];
-
+        // Se não estiver marcada a opção "cola", as margens mínimas são 10mm para todos os lados
         if ($isColaChecked !== true) {
             foreach ($resultados as $resultado) {
                 $erros = [];
@@ -157,21 +159,19 @@ class Functions
                 if ($resultado['margemInferior'] < 5) {
                     $erros[] = "inferior (" . $resultado['margemInferior'] . "mm)";
                 }
-
                 if (!empty($erros)) {
                     $mensagens[] = "A página " . $resultado['pagina'] . " está com margens de segurança abaixo do mínimo (5mm): " . implode(", ", $erros) . ".<br>";
                 }
             }
         }
-
+    
         if (!empty($mensagens)) {
             return $mensagens;
         } else {
-            return "Todas as paginas estão com a margem correta" . $isColaChecked;
+            return "Todas as páginas estão com a margem correta" . $isColaChecked;
         }
-
-
     }
+    
 
 
     public static function verificar_qtd_paginas($uploaded_file)
@@ -355,7 +355,7 @@ class Functions
                     $somaComponentes = array_sum(array_map('floatval', $componentes));
                 }
 
-                if ($somaComponentes > 2.9) {
+                if ($somaComponentes > 2.9   &&  $tamFonte <= 5 && $corTexto == '0.0, 0.0, 0.0, 0.0') {
                     $mensagens[] = "Texto cor: $corTexto, gráfico cor: $corGrafico, tamanho da fonte: $tamFonte, posição: ($posX, $posY) na página $pagina soma dos componentes: $somaComponentes";
                 }
 
@@ -413,8 +413,10 @@ class Functions
                 $componentes = explode(',', str_replace(' ', '', $corValues));
 
                 // Exemplo de tratamento:
-                if (strtolower($corType) == 'devicecmyk' || strtolower($corType) == 'devicegray') {
-                    ($componentes[count($componentes) - 1] >= 0.7) ? $mensagens[] = "Texto preto detectado na pagina $pagina cor " . $componentes[count($componentes) - 1] : null;
+                if (strtolower($corType) == 'devicecmyk' ) {
+                    if ($componentes[3] >= 0.7 && ($componentes[0] > 0 || $componentes[1] > 0 || $componentes[2] > 0)) {
+                        $mensagens[] = "Texto preto com outras cores detectado na página $pagina cor " . $corValues;
+                    }
                 }
 
 
@@ -425,13 +427,8 @@ class Functions
             }
         }
 
-        return $mensagens ?: "Todas as verificações passaram";
+        return $mensagens ?: "Todas as fontes pretas estão somente no canal K";
 
-        if (!empty($mensagens)) {
-            return $mensagens;
-        } else {
-            return "Todas as fontes estão em CMYK.";
-        }
 
     }
 }
