@@ -20,8 +20,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
          $margemseguranca = Functions::verificar_margem($uploaded_file, $isColaChecked);
          //$fontepretopagina = Functions::verificar_fontes_preto($uploaded_file);
          $java = Functions::java($uploaded_file);
-         $fontElement = Functions::fontElement($uploaded_file);
+         // $fontElement = Functions::fontElement($uploaded_file);
          $javaFontePreta = Functions::javaFontePreta($uploaded_file);
+         $strSangria;
     }
 }
 
@@ -32,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Preflight</title>
+    <title>Preflight Beta 1.1</title>
 
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
         integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
@@ -52,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
         <div class="row">
             <div class="col">
                 <div class="container text-center">
-                    <h3>Preflight</h3>
+                    <h3>Preflight Beta 1.1</h3>
                 </div>
             </div>
         </div>
@@ -66,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                         <br>        
                         <label for="cola">Lombo feito com cola</label>
                         <input type="checkbox" name="cola" id="" value="true">
-                        <br>
+                            <br>
 
                         <button type="submit" name="submit_arquivo">Enviar</button>
                     </form>
@@ -81,69 +82,103 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
         <div class="row bg-light ">
             <div class="col border-top">
                 <div class="container pt-3 pb-2">
-                    <?php
-                    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
-                        // Array com os dados a serem verificados
-                        $checks = [
-                            'lista-cores-imagem' => [
-                                'data' => $coresimagem ?? null,
-                                'mensagem' => 'imagens que não estão em cmyk',
-                            ],
-                            'lista-sangra' => [
-                                'data' => $sangra ?? null,
-                                'mensagem' => 'páginas sem a devida sangra',
-                            ],
-                            'lista-resolucao' => [
-                                'data' => $resolucao ?? null,
-                                'mensagem' => 'imagens sem a devida resolução',
-                            ],
-                            'lista-cor-fonte' => [
-                                'data' => $corfonte ?? null,
-                                'mensagem' => 'caixas de texto que não estão em cmyk ',
-                            ],
-                            'lista-margem-lombo' => [
-                                'data' => $margemlombo ?? null,
-                                'mensagem' => 'paginas estão sem a margem de segurança do lombo'
-                            ],
-                            'lista-margem-seguranca' => [
-                                'data' => $margemseguranca ?? null,
-                                'mensagem' => 'paginas estão sem a margem de segurança'
-                            ],
-                            'lista-fonte-preto' => [
-                                'data' => $fontepretopagina ?? null,
-                                'mensagem' => 'caixas de texto que não estão em preto',
-                            ],
-                            'lista-java' => [
-                                'data' => $java ?? null,
-                                'mensagem' => 'elementos que nao estão no espaço de cores recomendado',
-                            ],
-                            'lista-font-element' => [
-                                'data' => $fontElement ?? null,
-                                'mensagem' => 'elementos que nao estão no espaço de cores recomendado',
-                            ],
-                            'lista-java-fonte-preta' => [
-                                'data' => $javaFontePreta ?? null,
-                                'mensagem' => 'fontes visualmente pretas manchadas com outras cores',
-                            ],
-                        ];
-                        // Iterar sobre os dados
-                        foreach ($checks as $nomeLista => $info) {
-                            if (isset($info['data']) && is_array($info['data'])) {
-                                echo "<h5><a href='#' class='text-danger funcao-alternar' alternar-nome='{$nomeLista}'>Foram encontradas " . count($info['data']) . " {$info['mensagem']}</a></h5>";
-                            } else {
-                                echo "<h5 class='text-success'>" . ($info['data'] ?? '') . "</h5>";
-                            }
-                        }
-                    }
-                    ?>
+                <table>
+    <?php
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
+        // Array com os dados a serem verificados
+        $checks = [
+            'lista-cores-imagem' => [
+                'data' => $coresimagem ?? null,
+                'mensagem' => 'imagens que não estão em CMYK',
+                'titulo' => 'Espaçamento de cores das imagens',
+            ],
+            'lista-sangra' => [
+                'data' => $sangra ?? null,
+                'mensagem' => 'páginas sem a devida sangra',
+                'titulo' => 'Sangra',
+            ],
+            'lista-resolucao' => [
+                'data' => $resolucao ?? null,
+                'mensagem' => 'imagens sem a devida resolução',
+                'titulo' => 'Resolução',
+            ],
+            'lista-cor-fonte' => [
+                'data' => $corfonte ?? null,
+                'mensagem' => 'caixas de texto que não estão em CMYK',
+                'titulo' => 'Cor da fonte',
+            ],
+            'lista-margem-lombo' => [
+                'data' => $margemlombo ?? null,
+                'mensagem' => 'páginas sem a margem de segurança do lombo',
+                'titulo' => 'Margem de segurança no lombo',
+            ],
+            'lista-margem-seguranca' => [
+                'data' => $margemseguranca ?? null,
+                'mensagem' => 'páginas sem a margem de segurança',
+                'titulo' => 'Margem de segurança',
+            ],
+            'lista-fonte-preto' => [
+                'data' => $fontepretopagina ?? null,
+                'mensagem' => 'caixas de texto que não estão em preto',
+                'titulo' => 'Fonte preta',
+            ],
+            'lista-java' => [
+                'data' => $java ?? null,
+                'mensagem' => 'elementos que não estão no espaço de cores recomendado',
+                'titulo' => 'Espaço de cores elementos',
+            ],
+            'lista-java-fonte-preta' => [
+                'data' => $javaFontePreta ?? null,
+                'mensagem' => 'fontes visualmente pretas manchadas com outras cores',
+                'titulo' => 'Fonte preta manchada',
+            ],
+        ];
+        // Iterar sobre os dados
+        foreach ($checks as $nomeLista => $info) {
+            if (isset($info['data']) && is_array($info['data']) && !empty($info['data'])) {
+                echo "
+                    <tr>
+                        <td><h6>{$info['titulo']}</h6></td>
+                        <td>
+                            <b>
+                                <a href='#' class='text-danger funcao-alternar' data-target='{$nomeLista}'>
+                                    Foram encontradas " . count($info['data']) . " {$info['mensagem']}
+                                </a>
+                            </b>
+                        </td>
+                    </tr>
+                    <tr class='extra-info' id='{$nomeLista}' style='display: none;'>
+                        <td colspan='2'>
+                ";
+                // Exibir cada detalhe (pode ajustar a formatação conforme necessário)
+                foreach ($info['data'] as $item) {
+                    echo "<p>{$item}</p>";
+                }
+                echo "
+                        </td>
+                    </tr>
+                ";
+            } else if (!empty($info['data'])) {
+                // Caso o dado não seja um array ou já seja um valor único
+                echo "
+                    <tr>
+                        <td><h6>{$info['titulo']}</h6></td>
+                        <td>
+                            <b class='text-success'>{$info['data']}</b>
+                        </td>
+                    </tr>
+                ";
+            }
+        }
+    }
+    ?>
+</table>
 
                 </div>
             </div>
         </div>
         <div class="row bg-light pb-3">
             <div class="col pb-3">
-                <div class="container">
-                </div>
                 <div class="container pt-3 bg-light pb-3" id="lista-cores-imagem" style="display: none;">
                     <?php
                     if (!empty($coresimagem) && is_array($coresimagem)) {
@@ -156,18 +191,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                     }
                     ?>
                 </div>
-                <div class="container pt-3 bg-light pb-3" id="lista-sangra" style="display: none;">
+                <!-- <div class="container pt-3 bg-light pb-3" id="lista-sangra" style="display: none;">
                     <?php
-                    if (!empty($sangra) && is_array($sangra)) {
-                        echo "<table class='table table-striped table-bordered'>";
-                        echo "<thead><tr><th>Páginas sem a devida sangra</th></tr></thead><tbody>";
-                        foreach ($sangra as $pagina) {
-                            echo "<tr><td>{$pagina}</td></tr>";
-                        }
-                        echo "</tbody></table>";
-                    }
+                   
+                    // if (!empty($sangra) && is_array($sangra)) {
+                    //     echo "<table class='table table-striped table-bordered'>";
+                    //     echo "<thead><tr><th>Páginas sem a devida sangra</th></tr></thead><tbody>";
+                    //     foreach ($sangra as $pagina) {
+                    //         echo "<tr><td>{$pagina}</td></tr>";
+                    //     }
+                    //     echo "</tbody></table>";
+                    // }
                     ?>
-                </div>
+                </div> -->
                 <div class="container pt-3 bg-light pb-3" id="lista-margem-lombo" style="display: none;">
                     <?php
                     if (!empty($margemlombo) && is_array($margemlombo)) {
@@ -227,6 +263,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                         echo "</tbody></table>";
                     }
                     ?>
+                </div>
 
             </div>
 
@@ -234,7 +271,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                 <?php
                 if (!empty($java) && is_array($java)) {
                     echo "<table class='table table-striped table-bordered'>";
-                    echo "<thead><tr><th>Elementos detectador pelo arquivo .jar</th></tr></thead><tbody>";
+                    echo "<thead><tr><th>Elementos detectados em formatos de cores errados </th></tr></thead><tbody>";
                     foreach ($java as $elements) {
                         echo "<tr><td>{$elements}</td></tr>";
                     }
@@ -245,27 +282,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                 ?>
 
         </div>
-        <div class="container pt-3 bg-light pb-3" id="lista-font-element" style="display: none;">
+        <!-- <div class="container pt-3 bg-light pb-3" id="lista-font-element" style="display: none;">
             <?php
-            if (!empty($fontElement) && is_array($fontElement)) {
-                echo "<table class='table table-striped table-bordered'>";
-                echo "<thead><tr><th>Elementos detectador pelo arquivo .jar</th></tr></thead><tbody>";
-                foreach ($fontElement as $elements) {
-                    echo "<tr><td>{$elements}</td></tr>";
-                }
-                echo "</tbody></table>";
-            } else{
-                echo "<h5 class='text-success'>Não é uma array</h5>";
-            }
+            // if (!empty($fontElement) && is_array($fontElement)) {
+            //     echo "<table class='table table-striped table-bordered'>";
+            //     echo "<thead><tr><th>Elementos detectador pelo arquivo .jar</th></tr></thead><tbody>";
+            //     foreach ($fontElement as $elements) {
+            //         echo "<tr><td>{$elements}</td></tr>";
+            //     }
+            //     echo "</tbody></table>";
+            // } else{
+            //     echo "<h5 class='text-success'>Não é uma array</h5>";
+            // }
             ?>
 
 
-    </div>
+    </div> -->
     <div class="container pt-3 bg-light pb-3" id="lista-java-fonte-preta" style="display: none;">
         <?php
         if (!empty($javaFontePreta) && is_array($javaFontePreta)) {
             echo "<table class='table table-striped table-bordered'>";
-            echo "<thead><tr><th>Elementos detectados pelo arquivo .jar</th></tr></thead><tbody>";
+            echo "<thead><tr><th>Fontes manchadas detectadas</th></tr></thead><tbody>";
             foreach ($javaFontePreta as $elements) {
                 echo "<tr><td>{$elements}</td></tr>";
             }
@@ -283,23 +320,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
     document.addEventListener('DOMContentLoaded', function () {
 
         document.body.addEventListener('click', function (event) {
-            if (event.target.classList.contains('funcao-alternar')) {
-                const tabelaId = event.target.getAttribute('alternar-nome');
-
-                // Ocultar todas as tabelas
-                document.querySelectorAll('div[id^="lista-"]').forEach(function (tabela) {
-                    tabela.style.display = 'none';
-                });
-
-                // Mostrar a tabela correspondente
-                if (tabelaId) {
-                    const tabela = document.getElementById(tabelaId);
-                    if (tabela) {
-                        tabela.style.display = 'block';
-                    }
+        if (event.target.classList.contains('funcao-alternar')) {
+            event.preventDefault(); // previne o comportamento padrão do link
+            const targetId = event.target.getAttribute('data-target');
+            const targetRow = document.getElementById(targetId);
+            if (targetRow) {
+                if (targetRow.style.display === 'table-row') {
+                    // Se já estiver visível, esconde
+                    targetRow.style.display = 'none';
+                } else {
+                    // Esconde todas as rows extras
+                    document.querySelectorAll('.extra-info').forEach(function(row) {
+                        row.style.display = 'none';
+                    });
+                    // Exibe a row clicada
+                    targetRow.style.display = 'table-row';
                 }
             }
-        });
+        }
+    });
 
 
         const form = document.querySelector('#upload-form');
