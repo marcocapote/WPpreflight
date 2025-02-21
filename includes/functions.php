@@ -76,10 +76,10 @@ class Functions
                 } elseif ($value < 5) {
                     $issues[] = "$type: {$value}mm (abaixo do recomendado)";
                 }
-            }
+            }   
 
             if (!empty($issues)) {
-                $mensagens[] = "Página {$resultado['pagina']}: " . implode(', ', $issues);
+                $mensagens[] = "Pagina: {$resultado['pagina']} " . implode(', ', $issues);
             }
         }
 
@@ -141,7 +141,7 @@ class Functions
                     $erros[] = "inferior (" . $resultado['margemInferior'] . "mm)";
                 }
                 if (!empty($erros)) {
-                    $mensagens[] = "A página " . $resultado['pagina'] . " está com margens de segurança abaixo do mínimo (10mm): " . implode(", ", $erros) . ".<br>";
+                    $mensagens[] = "Pagina: " . $resultado['pagina'] . " está com margens de segurança abaixo do mínimo (10mm): " . implode(", ", $erros) . ".<br>";
                 }
             }
         } else {
@@ -160,7 +160,7 @@ class Functions
                     $erros[] = "inferior (" . $resultado['margemInferior'] . "mm)";
                 }
                 if (!empty($erros)) {
-                    $mensagens[] = "A página " . $resultado['pagina'] . " está com margens de segurança abaixo do mínimo (5mm): " . implode(", ", $erros) . ".<br>";
+                    $mensagens[] = "Pagina: " . $resultado['pagina'] . " está com margens de segurança abaixo do mínimo (5mm): " . implode(", ", $erros) . ".<br>";
                 }
             }
         }
@@ -224,10 +224,10 @@ class Functions
                 $resolucao = isset($matches[2]) ? intval($matches[2]) : 0;
 
                 // Depuração: Mostra os valores capturados
-                error_log("Página: $pagina | Resolução: $resolucao dpi");
+                error_log("Pagina: $pagina | Resolução: $resolucao dpi");
 
                 if ($resolucao < 300) {
-                    $mensagens[] = "Página $pagina contém imagem com resolução abaixo do recomendado: {$resolucao}dpi.<br>";
+                    $mensagens[] = "Pagina: $pagina contém imagem com resolução abaixo do recomendado: {$resolucao}dpi.<br>";
                 }
             }
 
@@ -260,7 +260,7 @@ class Functions
                 $pagina = $matches[1];
                 $colorSpace = $matches[2];
                 if (strtolower($colorSpace) !== 'devicecmyk' && strtolower($colorSpace) !== 'iccbased' && strtolower($colorSpace) !== 'separation' && strtolower($colorSpace) !== 'devicegray') {
-                    $mensagens[] = "Encontrada imagem na página $pagina, com um formato de cores diferente de CMYK Formato encontrado: " . $colorSpace;
+                    $mensagens[] = "Pagina: $pagina Encontrada imagem com um formato de cores diferente de CMYK Formato encontrado: " . $colorSpace;
                 }
             }
             // Verifica elementos gráficos (caminhos)
@@ -268,7 +268,7 @@ class Functions
                 $pagina = $matches[2];
                 $colorSpace = $matches[3];
                 if (strtolower($colorSpace) !== 'devicecmyk' && strtolower($colorSpace) !== 'iccbased' && strtolower($colorSpace) !== 'separation' && strtolower($colorSpace) !== 'devicegray') {
-                    $mensagens[] = "Encontrado elemento gráfico na página $pagina, com um formato de cores diferente de CMYK Formato encontrado: " . $colorSpace;
+                    $mensagens[] = "Pagina: $pagina Encontrado elemento gráfico com um formato de cores diferente de CMYK Formato encontrado: " . $colorSpace;
                 }
             }
 
@@ -310,7 +310,7 @@ class Functions
             if ($partes[0] == 'Pagina:') {
                 // Se não for DeviceCMYK, adicionar à lista de mensagens
                 if (strtolower($cor) !== 'devicegray' && strtolower($cor) !== 'devicecmyk' && strtolower($cor) !== 'iccbased') {
-                    $mensagens[] = "Encontrada fonte na página $pagina, com formato de cor diferente de CMYK: $cor";
+                    $mensagens[] = "Pagina: $pagina Encontrada fonte com formato de cor diferente de CMYK: $cor";
                 }
             }
         }
@@ -415,7 +415,7 @@ class Functions
                 // Exemplo de tratamento:
                 if (strtolower($corType) == 'devicecmyk' ) {
                     if ($componentes[3] >= 0.7 && ($componentes[0] > 0 || $componentes[1] > 0 || $componentes[2] > 0)) {
-                        $mensagens[] = "Texto preto com outras cores detectado na página $pagina cor " . $corValues;
+                        $mensagens[] = "Pagina: $pagina Encontrado texto preto com outras cores: " . $corValues;
                     }
                 }
 
