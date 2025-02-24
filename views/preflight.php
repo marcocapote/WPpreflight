@@ -1,6 +1,6 @@
 <?php
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
-    $isColaChecked = isset($_POST['cola']); // Verifica se a checkbox "cola" está marcada
+    $isColaChecked = true; // Verifica se a checkbox "cola" está marcada
 
     // Usa wp_handle_upload para processar o upload
     require_once(ABSPATH . 'wp-admin/includes/file.php');
@@ -13,11 +13,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
         // Processa o arquivo apenas se o upload foi bem-sucedido
         // $coresimagem = Functions::verificar_cores_paginas($uploaded_file);
          $sangra = Functions::verificar_sangra($uploaded_file);
+         $margemseguranca = Functions::verificar_margem($uploaded_file, $isColaChecked);
          $resolucao = Functions::java_verificar_resolucao($uploaded_file);
          $quantidade = Functions::verificar_qtd_paginas($uploaded_file);
          $corfonte = Functions::javaFontes($uploaded_file);
+         $corElemento = Functions::java($uploaded_file);
         // $margemlombo = $isColaChecked ? Functions::verificar_margem_lombo($uploaded_file) : null; // Apenas se "cola" estiver marcada
-         $margemseguranca = Functions::verificar_margem($uploaded_file, $isColaChecked);
+
          //$fontepretopagina = Functions::verificar_fontes_preto($uploaded_file);
          $java = Functions::java($uploaded_file);
          $fontElement = Functions::fontElement($uploaded_file);
@@ -49,10 +51,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
 
 <body style="background-color: lightgray">
     <div class="container-fluid">
-        <div class="row">
-            <div class="col">
-                <div class="container text-center">
-                    <h3>Preflight</h3>
+        <div class="row mb-3">
+            <div class="col-9">
+                <div class="text-right mt-4 mr-0 ">
+                    <h3>Preflight Beta 1.2.0</h3>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="text-right ">
+                    <img src="<?php echo plugin_dir_url(__FILE__) . '../src/logo_maxi_250.png'; ?>" width="220" height="220">
+                    
                 </div>
             </div>
         </div>
@@ -63,10 +71,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                     <form action="" method="post" enctype="multipart/form-data">
                         <label for="file">Escolha o pdf do material</label>
                         <input type="file" id="file" name="file" accept=".pdf">
-                        <br>        
-                        <label for="cola">Lombo feito com cola</label>
-                        <input type="checkbox" name="cola" id="" value="true">
                         <br>
+                        <br>
+                        
+                        <!-- <input type="checkbox" name="cola" id="" value="true">
+                        <label for="cola">Acabamento com cola | Lombada quadrada</label>
+                            <br>
+                        <br> -->
 
                         <button type="submit" name="submit_arquivo">Enviar</button>
                     </form>
@@ -81,61 +92,138 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
         <div class="row bg-light ">
             <div class="col border-top">
                 <div class="container pt-3 pb-2">
-                    <?php
-                    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
-                        // Array com os dados a serem verificados
-                        $checks = [
-                            'lista-cores-imagem' => [
-                                'data' => $coresimagem ?? null,
-                                'mensagem' => 'imagens que não estão em cmyk',
-                            ],
-                            'lista-sangra' => [
-                                'data' => $sangra ?? null,
-                                'mensagem' => 'páginas sem a devida sangra',
-                            ],
-                            'lista-resolucao' => [
-                                'data' => $resolucao ?? null,
-                                'mensagem' => 'imagens sem a devida resolução',
-                            ],
-                            'lista-cor-fonte' => [
-                                'data' => $corfonte ?? null,
-                                'mensagem' => 'caixas de texto que não estão em cmyk ',
-                            ],
-                            'lista-margem-lombo' => [
-                                'data' => $margemlombo ?? null,
-                                'mensagem' => 'paginas estão sem a margem de segurança do lombo'
-                            ],
-                            'lista-margem-seguranca' => [
-                                'data' => $margemseguranca ?? null,
-                                'mensagem' => 'paginas estão sem a margem de segurança'
-                            ],
-                            'lista-fonte-preto' => [
-                                'data' => $fontepretopagina ?? null,
-                                'mensagem' => 'caixas de texto que não estão em preto',
-                            ],
-                            'lista-java' => [
-                                'data' => $java ?? null,
-                                'mensagem' => 'elementos que nao estão no espaço de cores recomendado',
-                            ],
-                            'lista-font-element' => [
-                                'data' => $fontElement ?? null,
-                                'mensagem' => 'elementos que nao estão no espaço de cores recomendado',
-                            ],
-                            'lista-java-fonte-preta' => [
-                                'data' => $javaFontePreta ?? null,
-                                'mensagem' => 'fontes visualmente pretas manchadas com outras cores',
-                            ],
-                        ];
-                        // Iterar sobre os dados
-                        foreach ($checks as $nomeLista => $info) {
-                            if (isset($info['data']) && is_array($info['data'])) {
-                                echo "<h5><a href='#' class='text-danger funcao-alternar' alternar-nome='{$nomeLista}'>Foram encontradas " . count($info['data']) . " {$info['mensagem']}</a></h5>";
-                            } else {
-                                echo "<h5 class='text-success'>" . ($info['data'] ?? '') . "</h5>";
-                            }
-                        }
+                <table>
+    <?php
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
+        // Array com os dados a serem verificados
+        $checks = [
+            'lista-sangra' => [
+                'data' => $sangra ?? null,
+                'mensagem' => 'páginas com problemas na área de sangria, e requerem sua atenção.',
+                'titulo' => 'Sangria',
+            ],
+            'lista-margem-seguranca' => [
+                'data' => $margemseguranca ?? null,
+                'mensagem' => 'páginas a qual possui algum elemento / imagem fora da área mínima de segurança',
+                'titulo' => 'Margem de segurança',
+            ],
+            'lista-resolucao' => [
+                'data' => $resolucao ?? null,
+                'mensagem' => 'imagens abaixo da resolução recomendada. Verificar a qualidade as imagens listadas',
+                'titulo' => 'Imagem/Resolução',
+            ],
+            'lista-cor-fonte' => [
+                'data' => $corfonte ?? null,
+                'mensagem' => 'caixas de texto que não estão no padrão CMYK',
+                'titulo' => 'Espaço de cor/Fonte',
+            ],
+            'lista-java' => [
+                'data' => $corElemento ?? null,
+                'mensagem' => 'elementos que não estão no padrão CMYK.',
+                'titulo' => 'Espaço de cor/Imagens e vetores',
+            ],
+            'lista-java-fonte-preta' => [
+                'data' => $javaFontePreta ?? null,
+                'mensagem' => 'fontes visualmente pretas manchadas com outras cores',
+                'titulo' => 'Fonte preta manchada',
+            ],
+        ];
+        // Iterar sobre os dados
+        foreach ($checks as $nomeLista => $info) {
+            if (isset($info['data']) && is_array($info['data']) && !empty($info['data'])) {
+                echo "
+                    <tr>
+                        <td>
+                        <div class='d-flex flex-row'>
+                            <h6>{$info['titulo']}</h6>
+                            <svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='currentColor' class='bi bi-info-circle ml-auto' viewBox='0 0 16 16'>
+                                <path d='M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16'/>
+                                <path d='m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0'/>
+                            </svg>
+                         </div>
+                        </td>
+                        <td width='70%' class='p-0 m-0'>   
+                            <a href='#' class='d-flex container-fluid flex-row funcao-alternar text-danger p-3' data-target='{$nomeLista}'> 
+                                <div class='row d-flex w-100'>
+                                    <div class='col-10 text-left'>
+                                        <b> Foram encontradas " . count($info['data']) . " {$info['mensagem']} </b>
+                                    </div>
+                                    <div class='col-2 d-flex justify-content-end align-items-center' style='width: 70px;'>
+                                        <div id='olho'>
+                                            <svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='currentColor' class='bi bi-eye text-dark mr-2' viewBox='0 0 16 16'>
+                                                <path d='M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z'/>
+                                                <path d='M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0'/>
+                                            </svg>
+                                        </div>
+                                        <div class='erro'>
+                                            <svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='currentColor' class='text-danger bi bi-x-square mr-2' viewBox='0 0 16 16'>
+                                                <path d='M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z'/>
+                                                <path d='M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708'/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        </td>
+                    </tr>
+                    <tbody id='{$nomeLista}' class='extra-info' style='display: none;'>
+                ";
+                
+                foreach ($info['data'] as $item) {
+                    // Separar a mensagem em duas partes: "Pagina: <num>" e o restante
+                    if (preg_match('/^(Pagina:\s*\d+)(.*)$/i', $item, $matches)) {
+                        $col1 = trim($matches[1]); // "Pagina: <num>"
+                        $col2 = trim($matches[2]); // o restante da mensagem
+                    } else {
+                        $col1 = $item;
+                        $col2 = "";
                     }
-                    ?>
+                    echo " 
+                        <tr>
+                            <td><h6>{$col1}<h6></td>
+                            <td width='70%'>{$col2}</td>
+                        </tr>
+                    ";
+                }
+                echo "</tbody>";
+            } else if (!empty($info['data'])) {
+                // Caso o dado não seja um array ou já seja um valor único
+                echo "
+                    <tr>   
+                        <td>
+                        <div class='d-flex flex-row'>
+                            <h6>{$info['titulo']}</h6>
+                            <svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='currentColor' class='bi bi-info-circle ml-auto' viewBox='0 0 16 16'>
+                                <path d='M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16'/>
+                                <path d='m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0'/>
+                            </svg>
+                         </div>
+                        </td>
+                        <td width='70%' class='p-0 m-0'>
+                        <a class='d-flex container-fluid flex-row funcao-alternar text-success p-3'>
+                            <div class='row d-flex w-100'>
+                                <div class='col-10 text-left'>
+                                    <b class='text-success'>{$info['data']}</b>
+                                </div>
+                                <div class='col-2 d-flex justify-content-end align-items-center' style='width: 70px;'>
+                                    <div class='icone'>
+                                        <svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='currentColor' class='text-success bi bi-check-square mr-2' viewBox='0 0 16 16'>
+                                            <path d='M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z'/>
+                                            <path d='M10.97 4.97a.75.75 0 0 1 1.071 1.05l-3.992 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425z'/>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                            </a>
+                        </td>
+                    </tr>
+                ";
+            }
+        }
+    }
+    ?>
+</table>
+
 
                 </div>
             </div>
@@ -260,7 +348,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
             ?>
 
 
-    </div>
+    
+  
     <div class="container pt-3 bg-light pb-3" id="lista-java-fonte-preta" style="display: none;">
         <?php
         if (!empty($javaFontePreta) && is_array($javaFontePreta)) {
@@ -274,7 +363,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
             echo "<h5 class='text-success'>Não é uma array</h5>";
         }
         ?>
-
+        </div>
+</div>
 </body>
 
 </html>
