@@ -55,10 +55,10 @@ class Functions
         foreach ($sangras as $page => $values) {
             $resultados[] = [
                 'pagina' => $page,
-                'SangraEsquerda' => $values[0],
-                'SangraDireita' => $values[1],
-                'SangraSuperior' => $values[2],
-                'SangraInferior' => $values[3]
+                'Esquerda' => $values[0],
+                'Direita' => $values[1],
+                'Superior' => $values[2],
+                'Inferior' => $values[3]
             ];
         }
 
@@ -68,7 +68,7 @@ class Functions
             $issues = [];
 
             // Check all four bleed values
-            foreach (['SangraEsquerda', 'SangraDireita', 'SangraSuperior', 'SangraInferior'] as $type) {
+            foreach (['Esquerda', 'Direita', 'Superior', 'Inferior'] as $type) {
                 $value = round($resultado[$type], 1);
 
                 if ($value < 3) {
@@ -84,7 +84,7 @@ class Functions
         }
 
         return empty($mensagens)
-            ? "Todas as páginas estão com sangrias corretas"
+            ? "Todas as páginas com sangria estão dentro das normas."
             : $mensagens;
 
     }
@@ -128,6 +128,25 @@ class Functions
         if ($isColaChecked !== true) {
             foreach ($resultados as $resultado) {
                 $erros = [];
+                if ($resultado['margemEsquerda'] <= 5) {
+                    $erros[] = "esquerda (" . $resultado['margemEsquerda'] . "mm)";
+                }
+                if ($resultado['margemDireita'] <= 5) {
+                    $erros[] = "direita (" . $resultado['margemDireita'] . "mm)";
+                }
+                if ($resultado['margemSuperior'] <= 5) {
+                    $erros[] = "superior (" . $resultado['margemSuperior'] . "mm)";
+                }
+                if ($resultado['margemInferior'] <= 5) {
+                    $erros[] = "inferior (" . $resultado['margemInferior'] . "mm)";
+                }
+                if (!empty($erros)) {
+                    $mensagens[] = "Pagina: " . $resultado['pagina'] . " Margens de segurança abaixo do mínimo (10mm): " . implode(", ", $erros) . ".<br>";
+                }
+            }
+        } else if($isColaChecked === true) {
+            foreach ($resultados as $resultado) {
+                $erros = [];
                 if ($resultado['margemEsquerda'] < 5) {
                     $erros[] = "esquerda (" . $resultado['margemEsquerda'] . "mm)";
                 }
@@ -141,26 +160,7 @@ class Functions
                     $erros[] = "inferior (" . $resultado['margemInferior'] . "mm)";
                 }
                 if (!empty($erros)) {
-                    $mensagens[] = "Pagina: " . $resultado['pagina'] . " está com margens de segurança abaixo do mínimo (10mm): " . implode(", ", $erros) . ".<br>";
-                }
-            }
-        } else {
-            foreach ($resultados as $resultado) {
-                $erros = [];
-                if ($resultado['margemEsquerda'] < 10) {
-                    $erros[] = "esquerda (" . $resultado['margemEsquerda'] . "mm)";
-                }
-                if ($resultado['margemDireita'] < 5) {
-                    $erros[] = "direita (" . $resultado['margemDireita'] . "mm)";
-                }
-                if ($resultado['margemSuperior'] < 5) {
-                    $erros[] = "superior (" . $resultado['margemSuperior'] . "mm)";
-                }
-                if ($resultado['margemInferior'] < 5) {
-                    $erros[] = "inferior (" . $resultado['margemInferior'] . "mm)";
-                }
-                if (!empty($erros)) {
-                    $mensagens[] = "Pagina: " . $resultado['pagina'] . " está com margens de segurança abaixo do mínimo (5mm): " . implode(", ", $erros) . ".<br>";
+                    $mensagens[] = "Pagina: " . $resultado['pagina'] . " Margens de segurança abaixo do mínimo (5mm): " . implode(", ", $erros) . ".<br>";
                 }
             }
         }
@@ -168,7 +168,7 @@ class Functions
         if (!empty($mensagens)) {
             return $mensagens;
         } else {
-            return "Todas as páginas estão com a margem correta" . $isColaChecked;
+            return "Todos os elementos contidos na página estão dentro dos limites dos espaços de segurança recomendado." ;
         }
     }
     
@@ -214,7 +214,7 @@ class Functions
 
         $saida = self::runJavaCommand($pdfInfo['path'], $pdfInfo['dir'], 'image');
         if (!$saida)
-            return "Erro na execução do preflight.";
+            return "Todas as imagens estão com a resolução correta.";
 
         $mensagens = [];
         foreach ($saida as $linha) {
@@ -227,7 +227,7 @@ class Functions
                 error_log("Pagina: $pagina | Resolução: $resolucao dpi");
 
                 if ($resolucao < 300) {
-                    $mensagens[] = "Pagina: $pagina contém imagem com resolução abaixo do recomendado: {$resolucao}dpi.<br>";
+                    $mensagens[] = "Pagina: $pagina Imagem com resolução abaixo do recomendado: {$resolucao}dpi.<br>";
                 }
             }
 
@@ -236,7 +236,7 @@ class Functions
         if (!empty($mensagens)) {
             return $mensagens;
         } else {
-            return "Todos as imagens estão com a devida resolução.";
+            return "Todas as imagens estão com a resolução correta.";
         }
 
     }
@@ -318,7 +318,7 @@ class Functions
         if (!empty($mensagens)) {
             return $mensagens;
         } else {
-            return "Todas as fontes estão num formato de cores permitido.";
+            return "Todas as imagens e vetores do trabalho estão no espaço de cor correto. CMYK.";
         }
 
     }
