@@ -21,9 +21,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
         // $margemlombo = $isColaChecked ? Functions::verificar_margem_lombo($uploaded_file) : null; // Apenas se "cola" estiver marcada
 
          //$fontepretopagina = Functions::verificar_fontes_preto($uploaded_file);
-         $java = Functions::java($uploaded_file);
-         $fontElement = Functions::fontElement($uploaded_file);
+
+          $fontElement = Functions::fontElement($uploaded_file);
          $javaFontePreta = Functions::javaFontePreta($uploaded_file);
+         $strSangria;
     }
 }
 
@@ -34,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Preflight</title>
+    <title>Preflight Beta 1.1</title>
 
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
         integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
@@ -126,6 +127,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                 'data' => $javaFontePreta ?? null,
                 'mensagem' => 'fontes visualmente pretas manchadas com outras cores',
                 'titulo' => 'Fonte preta manchada',
+            ],
+            'lista-fonte-elemento' => [
+                'data' => $fontElement ?? null,
+                'mensagem' => 'elementos que não estão no padrão CMYK.',
+                'titulo' => 'Espaço de cor/Fonte',
             ],
         ];
         // Iterar sobre os dados
@@ -228,142 +234,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                 </div>
             </div>
         </div>
-        <div class="row bg-light pb-3">
-            <div class="col pb-3">
-                <div class="container">
-                </div>
-                <div class="container pt-3 bg-light pb-3" id="lista-cores-imagem" style="display: none;">
-                    <?php
-                    if (!empty($coresimagem) && is_array($coresimagem)) {
-                        echo "<table class='table table-striped table-bordered'>";
-                        echo "<thead><tr><th>Imagens que não estão em CMYK</th></tr></thead><tbody>";
-                        foreach ($coresimagem as $imagem) {
-                            echo "<tr><td>{$imagem}</td></tr>";
-                        }
-                        echo "</tbody></table>";
-                    }
-                    ?>
-                </div>
-                <div class="container pt-3 bg-light pb-3" id="lista-sangra" style="display: none;">
-                    <?php
-                    if (!empty($sangra) && is_array($sangra)) {
-                        echo "<table class='table table-striped table-bordered'>";
-                        echo "<thead><tr><th>Páginas sem a devida sangra</th></tr></thead><tbody>";
-                        foreach ($sangra as $pagina) {
-                            echo "<tr><td>{$pagina}</td></tr>";
-                        }
-                        echo "</tbody></table>";
-                    }
-                    ?>
-                </div>
-                <div class="container pt-3 bg-light pb-3" id="lista-margem-lombo" style="display: none;">
-                    <?php
-                    if (!empty($margemlombo) && is_array($margemlombo)) {
-                        echo "<table class='table table-striped table-bordered'>";
-                        echo "<thead><tr><th>Páginas sem a devida margem no lombo</th></tr></thead><tbody>";
-                        foreach ($margemlombo as $pagina) {
-                            echo "<tr><td>{$pagina}</td></tr>";
-                        }
-                        echo "</tbody></table>";
-                    }
-                    ?>
-                </div>
-                <div class="container pt-3 bg-light pb-3" id="lista-margem-seguranca" style="display: none;">
-                    <?php
-                    if (!empty($margemseguranca) && is_array($margemseguranca)) {
-                        echo "<table class='table table-striped table-bordered'>";
-                        echo "<thead><tr><th>Páginas sem a devida margem</th></tr></thead><tbody>";
-                        foreach ($margemseguranca as $pagina) {
-                            echo "<tr><td>{$pagina}</td></tr>";
-                        }
-                        echo "</tbody></table>";
-                    }
-                    ?>
-                </div>
-                <div class="container pt-3 bg-light pb-3" id="lista-resolucao" style="display: none;">
-                    <?php
-                    if (!empty($resolucao) && is_array($resolucao)) {
-                        echo "<table class='table table-striped table-bordered'>";
-                        echo "<thead><tr><th>Imagens sem a devida resolução</th></tr></thead><tbody>";
-                        foreach ($resolucao as $imgRes) {
-                            echo "<tr><td>{$imgRes}</td></tr>";
-                        }
-                        echo "</tbody></table>";
-                    }
-                    ?>
-                </div>
-                <div class="container pt-3 bg-light pb-3" id="lista-cor-fonte" style="display: none;">
-                    <?php
-                    if (!empty($corfonte) && is_array($corfonte)) {
-                        echo "<table class='table table-striped table-bordered'>";
-                        echo "<thead><tr><th>Caixas de texto não em CMYK</th></tr></thead><tbody>";
-                        foreach ($corfonte as $fonte) {
-                            echo "<tr><td>{$fonte}</td></tr>";
-                        }
-                        echo "</tbody></table>";
-                    }
-                    ?>
-                </div>
-                <div class="container pt-3 bg-light pb-3" id="lista-fonte-preto" style="display: none;">
-                    <?php
-                    if (!empty($fontepretopagina) && is_array($fontepretopagina)) {
-                        echo "<table class='table table-striped table-bordered'>";
-                        echo "<thead><tr><th>Caixas de texto não em preto</th></tr></thead><tbody>";
-                        foreach ($fontepretopagina as $fonte) {
-                            echo "<tr><td>{$fonte}</td></tr>";
-                        }
-                        echo "</tbody></table>";
-                    }
-                    ?>
-
-            </div>
-
-            <div class="container pt-3 bg-light pb-3" id="lista-java" style="display: none;">
-                <?php
-                if (!empty($java) && is_array($java)) {
-                    echo "<table class='table table-striped table-bordered'>";
-                    echo "<thead><tr><th>Elementos detectador pelo arquivo .jar</th></tr></thead><tbody>";
-                    foreach ($java as $elements) {
-                        echo "<tr><td>{$elements}</td></tr>";
-                    }
-                    echo "</tbody></table>";
-                } else{
-                    echo "<h5 class='text-success'>Não é uma array</h5>";
-                }
-                ?>
-
-        </div>
-        <div class="container pt-3 bg-light pb-3" id="lista-font-element" style="display: none;">
-            <?php
-            if (!empty($fontElement) && is_array($fontElement)) {
-                echo "<table class='table table-striped table-bordered'>";
-                echo "<thead><tr><th>Elementos detectador pelo arquivo .jar</th></tr></thead><tbody>";
-                foreach ($fontElement as $elements) {
-                    echo "<tr><td>{$elements}</td></tr>";
-                }
-                echo "</tbody></table>";
-            } else{
-                echo "<h5 class='text-success'>Não é uma array</h5>";
-            }
-            ?>
 
 
-    
-  
-    <div class="container pt-3 bg-light pb-3" id="lista-java-fonte-preta" style="display: none;">
-        <?php
-        if (!empty($javaFontePreta) && is_array($javaFontePreta)) {
-            echo "<table class='table table-striped table-bordered'>";
-            echo "<thead><tr><th>Elementos detectados pelo arquivo .jar</th></tr></thead><tbody>";
-            foreach ($javaFontePreta as $elements) {
-                echo "<tr><td>{$elements}</td></tr>";
-            }
-            echo "</tbody></table>";
-        } else{
-            echo "<h5 class='text-success'>Não é uma array</h5>";
-        }
-        ?>
-        </div>
 </div>
 </body>
 
@@ -373,23 +245,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
     document.addEventListener('DOMContentLoaded', function () {
 
         document.body.addEventListener('click', function (event) {
-            if (event.target.classList.contains('funcao-alternar')) {
-                const tabelaId = event.target.getAttribute('alternar-nome');
-
-                // Ocultar todas as tabelas
-                document.querySelectorAll('div[id^="lista-"]').forEach(function (tabela) {
-                    tabela.style.display = 'none';
+        // Garante que o clique seja tratado mesmo que seja em um elemento interno
+        const link = event.target.closest('.funcao-alternar');
+        if (!link) return;
+        event.preventDefault();
+        
+        const targetId = link.getAttribute('data-target');
+        const targetContainer = document.getElementById(targetId);
+        // Seleciona o container onde o SVG está (dentro do link)
+        const svgContainer = link.querySelector('#olho');
+        
+        // SVG padrão (olho) e SVG alternado (olho riscado)
+        const eyeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-eye mr-2 text-dark" viewBox="0 0 16 16">
+        <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z"/>
+        <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0"/>
+        </svg>`;
+        
+        const eyeSlashSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-eye-slash text-dark mr-2" viewBox="0 0 16 16">
+        <path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7 7 0 0 0-2.79.588l.77.771A6 6 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755q-.247.248-.517.486z"/>
+        <path d="M11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.829 2.829zm-2.943 1.299.822.822a3.5 3.5 0 0 1-4.474-4.474l.823.823a2.5 2.5 0 0 0 2.829 2.829"/>
+        <path d="M3.35 5.47q-.27.24-.518.487A13 13 0 0 0 1.172 8l.195.288c.335.48.83 1.12 1.465 1.755C4.121 11.332 5.881 12.5 8 12.5c.716 0 1.39-.133 2.02-.36l.77.772A7 7 0 0 1 8 13.5C3 13.5 0 8 0 8s.939-1.721 2.641-3.238l.708.709zm10.296 8.884-12-12 .708-.708 12 12z"/>
+        </svg>`;
+        
+        if (targetContainer) {
+            if (targetContainer.style.display === 'table-row-group') {
+                // Se estiver visível, oculta o container e define o ícone padrão (olho)
+                targetContainer.style.display = 'none';
+                if (svgContainer) {
+                    svgContainer.innerHTML = eyeSvg;
+                }
+            } else {
+                // Oculta todos os containers de extra-info e reseta todos os ícones para o olho padrão
+                document.querySelectorAll('.extra-info').forEach(function (tbody) {
+                    tbody.style.display = 'none';
                 });
-
-                // Mostrar a tabela correspondente
-                if (tabelaId) {
-                    const tabela = document.getElementById(tabelaId);
-                    if (tabela) {
-                        tabela.style.display = 'block';
-                    }
+                document.querySelectorAll('.funcao-alternar #olho').forEach(function (el) {
+                    el.innerHTML = eyeSvg;
+                });
+                // Exibe o container desejado e troca o ícone para olho riscado
+                targetContainer.style.display = 'table-row-group';
+                if (svgContainer) {
+                    svgContainer.innerHTML = eyeSlashSvg;
                 }
             }
-        });
+        }
+    });
+
+
 
 
         const form = document.querySelector('#upload-form');

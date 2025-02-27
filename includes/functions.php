@@ -1,8 +1,7 @@
 <?php
 class Functions
 {
-    private static function getPdfInfo($uploaded_file)
-    {
+    private static function getPdfInfo($uploaded_file){
         if (!isset($uploaded_file['file']) || !file_exists($uploaded_file['file'])) {
             return ['error' => "Arquivo inválido ou não enviado."];
         }
@@ -16,80 +15,38 @@ class Functions
         ];
     }
 
-    private static function runJavaCommand($pdfPath, $jarPath, $commandType)
-    {
-        $command = 'java -jar ' . escapeshellarg($jarPath) . ' ' . escapeshellarg($pdfPath) . ' ' . $commandType . ' 2>&1';
+    private static function runJavaCommand($pdfPath, $jarPath, $commandType){
+        $command = 'java -jar ' . escapeshellarg($jarPath) . ' ' . escapeshellarg($pdfPath) . ' ' . 'margin 2>&1';
         exec($command, $output, $retorno);
         return $retorno === 0 ? $output : null;
     }
-    public static function verificar_sangra($uploaded_file)
-    {
+    public static function verificar_sangra($uploaded_file) {
         $pdfInfo = self::getPdfInfo($uploaded_file);
+        $regex = '/Pagina:\s*(\d+).*?(superior|esquerda|direita|inferior)?\s*distancia:\s*([\d\.]+)mm?/is';
+    
         if (isset($pdfInfo['error']))
             return $pdfInfo['error'];
-
-        $saida = self::runJavaCommand($pdfInfo['path'], $pdfInfo['dir'], 'margin');
-        if (!$saida)
-            return "Erro na execução do preflight.";
-        // Parse the output
-        $currentPage = 0;
-        foreach ($saida as $linha) {
-            // Detect page numbers
-            if (str_starts_with($linha, 'Pagina: ')) {
-                $currentPage = (int) str_replace('Pagina: ', '', $linha);
-            }
-
-            // Parse bleed values
-            if (str_contains($linha, 'Sangria [')) {
-                preg_match_all('/[\d,]+(?= mm)/', $linha, $matches);
-                if (count($matches[0]) === 4) {
-                    // Convert comma decimal separator to dot and cast to float
-                    $sangras[$currentPage] = array_map(function ($value) {
-                        return (float) str_replace(',', '.', $value);
-                    }, $matches[0]);
-                }
-            }
-        }
-
-        // Build resultados array
-        foreach ($sangras as $page => $values) {
-            $resultados[] = [
-                'pagina' => $page,
-                'Esquerda' => $values[0],
-                'Direita' => $values[1],
-                'Superior' => $values[2],
-                'Inferior' => $values[3]
-            ];
-        }
-
-
+    
+        $saida = self::runJavaCommand($pdfInfo['path'], $pdfInfo['dir'], 'image');
+    
         $mensagens = [];
-        foreach ($resultados as $resultado) {
-            $issues = [];
-
-            // Check all four bleed values
-            foreach (['Esquerda', 'Direita', 'Superior', 'Inferior'] as $type) {
-                $value = round($resultado[$type], 1);
-
-                if ($value < 3) {
-                    $issues[] = "$type: {$value}mm (abaixo do mínimo)";
-                } elseif ($value < 5) {
-                    $issues[] = "$type: {$value}mm (abaixo do recomendado)";
-                }
-            }
-
-            if (!empty($issues)) {
-                $mensagens[] = "Página {$resultado['pagina']}: " . implode(', ', $issues);
+    
+        $textoCompleto = implode("\n", $saida); // Junta todas as linhas para processar o texto completo
+    
+        if (preg_match_all($regex, $textoCompleto, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                $pagina = $match[1]; // Número da página
+                $direcao = $match[2]; // Direção pode ser vazia
+                $distancia = round($match[3], 1); // Distância
+    
+                $mensagens[] = "Pagina: $pagina  Encontrado elemento muito próximo do limite de corte ($direcao). Distância: $distancia mm";
             }
         }
-
-        return empty($mensagens)
-            ? "Todas as páginas com sangria estão dentro das normas."
-            : $mensagens;
-
+    
+        return !empty($mensagens) ? $mensagens : "ok";
     }
-    public static function verificar_margem($uploaded_file, $isColaChecked)
-    {
+    
+    public static function verificar_margem($uploaded_file, $isColaChecked){
         $pdfInfo = self::getPdfInfo($uploaded_file);
         if (isset($pdfInfo['error'])) {
             return $pdfInfo['error'];
@@ -103,6 +60,7 @@ class Functions
         // Aqui iremos montar o array $resultados com os dados de cada página
         $resultados = [];
         foreach ($saida as $index => $linha) {
+            $pattern = '/Pagina: (\d+)\s+Posicao: \(([\d.]+), ([\d.]+)\),\s+Tamanho: ([\d.]+)\s+CorTexto: \[([\d., ]*)\]\s+CorGrafico: \[([\d., ]*)\]/';
             $partes = preg_split('/\s+/', trim($linha));
             // Verifica se os dados necessários existem na linha
             if (isset($partes[13])) {
@@ -174,8 +132,7 @@ class Functions
     
 
 
-    public static function verificar_qtd_paginas($uploaded_file)
-    {
+    public static function verificar_qtd_paginas($uploaded_file){
         $pdfInfo = self::getPdfInfo($uploaded_file);
         if (isset($pdfInfo['error']))
             return $pdfInfo['error'];
@@ -206,8 +163,7 @@ class Functions
 
     }
 
-    public static function java_verificar_resolucao($uploaded_file)
-    {
+    public static function java_verificar_resolucao($uploaded_file){
         $pdfInfo = self::getPdfInfo($uploaded_file);
         if (isset($pdfInfo['error']))
             return $pdfInfo['error'];
@@ -224,7 +180,7 @@ class Functions
                 $resolucao = isset($matches[2]) ? intval($matches[2]) : 0;
 
                 // Depuração: Mostra os valores capturados
-                error_log("Página: $pagina | Resolução: $resolucao dpi");
+                error_log("Pagina: $pagina | Resolução: $resolucao dpi");
 
                 if ($resolucao < 300) {
                     $mensagens[] = "Pagina: $pagina Imagem com resolução abaixo do recomendado: {$resolucao}dpi.<br>";
@@ -241,8 +197,7 @@ class Functions
 
     }
 
-    public static function java($uploaded_file)
-    {
+    public static function java($uploaded_file){
         $pdfInfo = self::getPdfInfo($uploaded_file);
         if (isset($pdfInfo['error']))
             return $pdfInfo['error'];
@@ -260,7 +215,7 @@ class Functions
                 $pagina = $matches[1];
                 $colorSpace = $matches[2];
                 if (strtolower($colorSpace) !== 'devicecmyk' && strtolower($colorSpace) !== 'iccbased' && strtolower($colorSpace) !== 'separation' && strtolower($colorSpace) !== 'devicegray') {
-                    $mensagens[] = "Encontrada imagem na página $pagina, com um formato de cores diferente de CMYK Formato encontrado: " . $colorSpace;
+                    $mensagens[] = "Pagina: $pagina Encontrada imagem com um formato de cores diferente de CMYK Formato encontrado: " . $colorSpace;
                 }
             }
             // Verifica elementos gráficos (caminhos)
@@ -268,7 +223,7 @@ class Functions
                 $pagina = $matches[2];
                 $colorSpace = $matches[3];
                 if (strtolower($colorSpace) !== 'devicecmyk' && strtolower($colorSpace) !== 'iccbased' && strtolower($colorSpace) !== 'separation' && strtolower($colorSpace) !== 'devicegray') {
-                    $mensagens[] = "Encontrado elemento gráfico na página $pagina, com um formato de cores diferente de CMYK Formato encontrado: " . $colorSpace;
+                    $mensagens[] = "Pagina: $pagina Encontrado elemento gráfico com um formato de cores diferente de CMYK Formato encontrado: " . $colorSpace;
                 }
             }
 
@@ -281,13 +236,12 @@ class Functions
         if (!empty($mensagens)) {
             return $mensagens; // Remove duplicados
         } else {
-            return "Todos os elementos gráficos e imagens estão em CMYK.";
+            return "Todos os elementos gráficos e imagens estão num formato de cores permitido.";
         }
 
     }
 
-    public static function javaFontes($uploaded_file)
-    {
+    public static function javaFontes($uploaded_file){
         $pdfInfo = self::getPdfInfo($uploaded_file);
         if (isset($pdfInfo['error']))
             return $pdfInfo['error'];
@@ -310,7 +264,7 @@ class Functions
             if ($partes[0] == 'Pagina:') {
                 // Se não for DeviceCMYK, adicionar à lista de mensagens
                 if (strtolower($cor) !== 'devicegray' && strtolower($cor) !== 'devicecmyk' && strtolower($cor) !== 'iccbased') {
-                    $mensagens[] = "Encontrada fonte na página $pagina, com formato de cor diferente de CMYK: $cor";
+                    $mensagens[] = "Pagina: $pagina Encontrada fonte com formato de cor diferente de CMYK: $cor";
                 }
             }
         }
@@ -323,8 +277,7 @@ class Functions
 
     }
 
-    public static function fontElement($uploaded_file)
-    {
+    public static function fontElement($uploaded_file){
         $pdfInfo = self::getPdfInfo($uploaded_file);
         if (isset($pdfInfo['error']))
             return $pdfInfo['error'];
@@ -355,8 +308,8 @@ class Functions
                     $somaComponentes = array_sum(array_map('floatval', $componentes));
                 }
 
-                if ($somaComponentes > 2.9   &&  $tamFonte <= 5 && $corTexto == '0.0, 0.0, 0.0, 0.0') {
-                    $mensagens[] = "Texto cor: $corTexto, gráfico cor: $corGrafico, tamanho da fonte: $tamFonte, posição: ($posX, $posY) na página $pagina soma dos componentes: $somaComponentes";
+                if ($somaComponentes > 1   &&  $tamFonte <= 5 && $corTexto == '0.0, 0.0, 0.0, 0.0') {
+                    $mensagens[] = "Pagina: $pagina Texto cor: $corTexto, gráfico cor: $corGrafico, tamanho da fonte: $tamFonte, posição: ($posX, $posY) na página $pagina soma dos componentes: $somaComponentes";
                 }
 
             } else {
@@ -372,16 +325,14 @@ class Functions
         }
 
     }
-
-    public static function javaFontePreta($uploaded_file)
-    {
+    public static function javaFontePreta($uploaded_file){
         $pdfInfo = self::getPdfInfo($uploaded_file);
         if (isset($pdfInfo['error']))
             return $pdfInfo['error'];
 
         $saida = self::runJavaCommand($pdfInfo['path'], $pdfInfo['dir'], 'fonts');
         if (!$saida)
-            return "Erro na execução do preflight.";
+            return "Não foi possivel encontrar nenhuma fonte preta.";
 
         $mensagens = [];
 
@@ -415,7 +366,7 @@ class Functions
                 // Exemplo de tratamento:
                 if (strtolower($corType) == 'devicecmyk' ) {
                     if ($componentes[3] >= 0.7 && ($componentes[0] > 0 || $componentes[1] > 0 || $componentes[2] > 0)) {
-                        $mensagens[] = "Texto preto com outras cores detectado na página $pagina cor " . $corValues;
+                        $mensagens[] = "Pagina: $pagina Encontrado texto preto com outras cores: " . $corValues;
                     }
                 }
 
