@@ -12,19 +12,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
     } else {
         // Processa o arquivo apenas se o upload foi bem-sucedido
         // $coresimagem = Functions::verificar_cores_paginas($uploaded_file);
-         $sangra = Functions::verificar_sangra($uploaded_file);
+
+         $functions = new Functions();
+
+         //Verifica se as sangras estão settadas
+         $sangra = $functions->verificar_sangra($uploaded_file);
+
+         //cama a função marginElement para processar os elementos que estao em area de risco e dividi-los para MSI (margem de segurança interna) e MSE (margem de segurança externa)
+         $functions->marginElement($uploaded_file);
+
+         //Pega os elementos detectados pela função marginElement
+         $getSangra = !is_array($sangra) ? $functions->getListaMSE() : null;
+
+         //Verifica se as margens de segurança estão settadas
          $margemseguranca = Functions::verificar_margem($uploaded_file, $isColaChecked);
+
+        //Verifica se as imagens estão com a resolução correta
          $resolucao = Functions::java_verificar_resolucao($uploaded_file);
+
+         //Pega os elementos detectados pela função marginElement
+         $getMSI = !empty($functions->getListaMSI()) ? $functions->getListaMSI() : null;
+
+         //Puxa a quantidade de paginas e o tamanho do arquivo
          $quantidade = Functions::verificar_qtd_paginas($uploaded_file);
-         $corfonte = Functions::javaFontes($uploaded_file);
-         $corElemento = Functions::java($uploaded_file);
+
+         //Verifica se as fontes estão no padrão CMYK
+         $corfonte = Functions::corFontes($uploaded_file);
+
+         //verifica se os elementos graficos estão no padrão CMYK
+         $corElemento = Functions::corElemento($uploaded_file);
+
         // $margemlombo = $isColaChecked ? Functions::verificar_margem_lombo($uploaded_file) : null; // Apenas se "cola" estiver marcada
 
-         //$fontepretopagina = Functions::verificar_fontes_preto($uploaded_file);
+         //verifica se as fontes dentro dos elementos graficos vão aparecer na impressao
+         $fontElement = Functions::fontElement($uploaded_file);
 
-          $fontElement = Functions::fontElement($uploaded_file);
+        //verifica se as fontes pretas estão manchadas
          $javaFontePreta = Functions::javaFontePreta($uploaded_file);
-         $strSangria;
+        
     }
 }
 
@@ -35,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Preflight Beta 1.1</title>
+    <title>Preflight Beta 1.2</title>
 
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
         integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
@@ -100,13 +125,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
         $checks = [
             'lista-sangra' => [
                 'data' => $sangra ?? null,
-                'mensagem' => 'páginas com problemas na área de sangria, e requerem sua atenção.',
+                'mensagem' => 'páginas com problemas na configuração da sangria, e requerem sua atenção.',
                 'titulo' => 'Sangria',
+            ],
+            'lista-get-sangra' => [
+                'data' => $getSangra ?? null,
+                'mensagem' => 'elementos com pouca ou nenhuma sangria, e requerem sua atenção.',
+                'titulo' => 'Sangria dos elementos',
             ],
             'lista-margem-seguranca' => [
                 'data' => $margemseguranca ?? null,
                 'mensagem' => 'páginas a qual possui algum elemento / imagem fora da área mínima de segurança',
                 'titulo' => 'Margem de segurança',
+            ],
+            'lista-get-MSI' => [
+                'data' => $getMSI ?? null,
+                'mensagem' => 'elementos que possivelmente devem ser sangrados, e requerem sua atenção.',
+                'titulo' => 'Margem de segurança dos elementos',
             ],
             'lista-resolucao' => [
                 'data' => $resolucao ?? null,
@@ -131,8 +166,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
             'lista-fonte-elemento' => [
                 'data' => $fontElement ?? null,
                 'mensagem' => 'elementos que não estão no padrão CMYK.',
-                'titulo' => 'Espaço de cor/Fonte',
+                'titulo' => 'Visibilidade da fonte',
             ],
+
         ];
         // Iterar sobre os dados
         foreach ($checks as $nomeLista => $info) {
@@ -152,7 +188,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                             <a href='#' class='d-flex container-fluid flex-row funcao-alternar text-danger p-3' data-target='{$nomeLista}'> 
                                 <div class='row d-flex w-100'>
                                     <div class='col-10 text-left'>
-                                        <b> Foram encontradas " . count($info['data']) . " {$info['mensagem']} </b>
+                                        <b> " . count($info['data']) . " {$info['mensagem']} </b>
                                     </div>
                                     <div class='col-2 d-flex justify-content-end align-items-center' style='width: 70px;'>
                                         <div id='olho'>
@@ -186,7 +222,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                     }
                     echo " 
                         <tr>
-                            <td><h6>{$col1}<h6></td>
+                            <td style='text-align: center;'>{$col1}</td>
                             <td width='70%'>{$col2}</td>
                         </tr>
                     ";

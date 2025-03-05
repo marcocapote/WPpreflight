@@ -1,6 +1,34 @@
 <?php
 class Functions
 {
+    private array $listaMSE = [];
+    private array $listaMSI = [];
+
+    
+    public function getListaMSE() {
+        if(!empty($this->listaMSE)){
+            return $this->listaMSE;
+        } else {
+            return "Todos os elementos contidos na página estão dentro dos limites dos espaços de segurança recomendado.";
+        }
+    }
+
+    public function getListaMSI() {
+        if(!empty($this->listaMSI)){
+            return $this->listaMSI;
+        } else {
+            return "Todos os elementos contidos na página estão dentro dos limites dos espaços de segurança recomendado.";
+        }
+    }
+
+    public function setListaMSE(array $listaMSE): void {
+        $this->listaMSE = $listaMSE;
+    }
+
+    public function setListaMSI(array $listaMSI): void {
+        $this->listaMSI = $listaMSI;
+    }
+
     private static function getPdfInfo($uploaded_file){
         if (!isset($uploaded_file['file']) || !file_exists($uploaded_file['file'])) {
             return ['error' => "Arquivo inválido ou não enviado."];
@@ -16,34 +44,131 @@ class Functions
     }
 
     private static function runJavaCommand($pdfPath, $jarPath, $commandType){
-        $command = 'java -jar ' . escapeshellarg($jarPath) . ' ' . escapeshellarg($pdfPath) . ' ' . 'margin 2>&1';
+        $command = 'java -jar ' . escapeshellarg($jarPath) . ' ' . escapeshellarg($pdfPath) . ' ' . $commandType . ' 2>&1';
         exec($command, $output, $retorno);
         return $retorno === 0 ? $output : null;
     }
-    public static function verificar_sangra($uploaded_file) {
+
+    public function marginElement($uploaded_file) {
         $pdfInfo = self::getPdfInfo($uploaded_file);
-        $regex = '/Pagina:\s*(\d+).*?(superior|esquerda|direita|inferior)?\s*distancia:\s*([\d\.]+)mm?/is';
-    
-        if (isset($pdfInfo['error']))
+        
+        // Regex ajustada para capturar todas as distâncias por página
+        $regex = '/Pagina:\s*(\d+)(?:.*?(superior|esquerda|direita|inferior)\s*distancia:\s*(-?[\d\.]+)mm?)+/is';
+        
+        if (isset($pdfInfo['error'])) {
             return $pdfInfo['error'];
+        }
     
-        $saida = self::runJavaCommand($pdfInfo['path'], $pdfInfo['dir'], 'image');
+        $saida = self::runJavaCommand($pdfInfo['path'], $pdfInfo['dir'], 'margin');
+        if (!$saida) {
+            return "Erro na execução do preflight.";
+        }
     
-        $mensagens = [];
+        $mensagensMSE = [];
+        $mensagensMSI = [];
+        $textoCompleto = implode("\n", $saida);
     
-        $textoCompleto = implode("\n", $saida); // Junta todas as linhas para processar o texto completo
+        // Processa cada linha individualmente para manter o contexto da página
+        $paginaAtual = 0;
+        foreach ($saida as $linha) {
+            // Atualiza a página atual quando encontrar "Pagina: X"
+            if (preg_match('/Pagina:\s*(\d+)/i', $linha, $paginaMatch)) {
+                $paginaAtual = (int)$paginaMatch[1];
+            }
     
-        if (preg_match_all($regex, $textoCompleto, $matches, PREG_SET_ORDER)) {
-            foreach ($matches as $match) {
-                $pagina = $match[1]; // Número da página
-                $direcao = $match[2]; // Direção pode ser vazia
-                $distancia = round($match[3], 1); // Distância
+            // Captura as distâncias mesmo que a linha não mencione a página novamente
+            if (preg_match_all('/(superior|esquerda|direita|inferior)\s*distancia:\s*(-?[\d\.]+)mm?/i', $linha, $matches, PREG_SET_ORDER)) {
+                foreach ($matches as $match) {
+                    $direcao = $match[1];
+                    $distancia = (float)$match[2];
     
-                $mensagens[] = "Pagina: $pagina  Encontrado elemento muito próximo do limite de corte ($direcao). Distância: $distancia mm";
+                    if ($paginaAtual === 0) continue; // Ignora se não houver página definida
+    
+                    $mensagem = "Pagina: $paginaAtual  Encontrado elemento muito próximo do limite de corte ($direcao). Distância: " . abs(round($distancia, 2)) . " mm";
+                    
+                    if ($distancia >= 0) {
+                        $mensagensMSE[] = "Pagina: $paginaAtual  Encontrado elemento muito próximo do limite de corte ($direcao) sem sangra suficiente. Distância: " . abs(round($distancia, 2)) . " mm";
+                    } else {
+                        $mensagensMSI[] = "Pagina: $paginaAtual  Encontrado elemento muito próximo do limite de corte ($direcao) e é recomendado sangrar. Distância: " . abs(round($distancia, 2)) . " mm";
+                    }
+                }
             }
         }
     
-        return !empty($mensagens) ? $mensagens : "ok";
+        if (!empty($mensagensMSE)) {
+            $this->setListaMSE($mensagensMSE);
+        } 
+        if (!empty($mensagensMSI)) {
+            $this->setListaMSI($mensagensMSI);
+        }
+    }
+
+
+    public static function verificar_sangra($uploaded_file)
+    {
+        $pdfInfo = self::getPdfInfo($uploaded_file);
+        if (isset($pdfInfo['error']))
+            return $pdfInfo['error'];
+
+        $saida = self::runJavaCommand($pdfInfo['path'], $pdfInfo['dir'], 'margin');
+        if (!$saida)
+            return "Erro na execução do preflight.";
+        // Parse the output
+        $currentPage = 0;
+        foreach ($saida as $linha) {
+            // Detect page numbers
+            if (str_starts_with($linha, 'Pagina: ')) {
+                $currentPage = (int) str_replace('Pagina: ', '', $linha);
+            }
+
+            // Parse bleed values
+            if (str_contains($linha, 'Sangria [')) {
+                preg_match_all('/[\d,]+(?= mm)/', $linha, $matches);
+                if (count($matches[0]) === 4) {
+                    // Convert comma decimal separator to dot and cast to float
+                    $sangras[$currentPage] = array_map(function ($value) {
+                        return (float) str_replace(',', '.', $value);
+                    }, $matches[0]);
+                }
+            }
+        }
+
+        // Build resultados array
+        foreach ($sangras as $page => $values) {
+            $resultados[] = [
+                'pagina' => $page,
+                'Esquerda' => $values[0],
+                'Direita' => $values[1],
+                'Superior' => $values[2],
+                'Inferior' => $values[3]
+            ];
+        }
+
+
+        $mensagens = [];
+        foreach ($resultados as $resultado) {
+            $issues = [];
+
+            // Check all four bleed values
+            foreach (['Esquerda', 'Direita', 'Superior', 'Inferior'] as $type) {
+                $value = round($resultado[$type], 1);
+
+                if ($value < 3) {
+                    $issues[] = "$type: {$value}mm (abaixo do mínimo)";
+                } elseif ($value < 5) {
+                    $issues[] = "$type: {$value}mm (abaixo do recomendado)";
+                }
+            }   
+
+            if (!empty($issues)) {
+                $mensagens[] = "Pagina: {$resultado['pagina']} " . implode(', ', $issues);
+            }
+        }
+
+        return empty($mensagens)
+            ? "Todas as páginas estão com as sangras configuradas de acordo com as normas."
+            : $mensagens;
+
     }
     
     public static function verificar_margem($uploaded_file, $isColaChecked){
@@ -126,7 +251,7 @@ class Functions
         if (!empty($mensagens)) {
             return $mensagens;
         } else {
-            return "Todos os elementos contidos na página estão dentro dos limites dos espaços de segurança recomendado." ;
+            return "Todas as paginas estão com as margens de segurança configuradas de acordo com as normas."; ;
         }
     }
     
@@ -197,7 +322,7 @@ class Functions
 
     }
 
-    public static function java($uploaded_file){
+    public static function corElemento($uploaded_file){
         $pdfInfo = self::getPdfInfo($uploaded_file);
         if (isset($pdfInfo['error']))
             return $pdfInfo['error'];
@@ -241,7 +366,7 @@ class Functions
 
     }
 
-    public static function javaFontes($uploaded_file){
+    public static function corFontes($uploaded_file){
         $pdfInfo = self::getPdfInfo($uploaded_file);
         if (isset($pdfInfo['error']))
             return $pdfInfo['error'];
@@ -312,10 +437,7 @@ class Functions
                     $mensagens[] = "Pagina: $pagina Texto cor: $corTexto, gráfico cor: $corGrafico, tamanho da fonte: $tamFonte, posição: ($posX, $posY) na página $pagina soma dos componentes: $somaComponentes";
                 }
 
-            } else {
-                // Caso a regex não corresponda à linha
-                return "Linha não corresponde ao padrão: $linha\n";
-            }
+            } 
         }
 
         if (!empty($mensagens)) {
@@ -382,5 +504,6 @@ class Functions
 
 
     }
+
 }
 ?>
