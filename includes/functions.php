@@ -433,8 +433,8 @@ class Functions
                     $somaComponentes = array_sum(array_map('floatval', $componentes));
                 }
 
-                if ($somaComponentes > 1   &&  $tamFonte <= 5 && $corTexto == '0.0, 0.0, 0.0, 0.0') {
-                    $mensagens[] = "Pagina: $pagina Texto cor: $corTexto, gráfico cor: $corGrafico, tamanho da fonte: $tamFonte, posição: ($posX, $posY) na página $pagina soma dos componentes: $somaComponentes";
+                if ($somaComponentes >= 1.8   &&  $tamFonte <= 5 && $corTexto == '0.0, 0.0, 0.0, 0.0') {
+                    $mensagens[] = "Pagina: $pagina Texto cor: $corTexto, gráfico cor: $corGrafico, tamanho da fonte: $tamFonte na página $pagina soma dos componentes: $somaComponentes";
                 }
 
             } 

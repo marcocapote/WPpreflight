@@ -77,6 +77,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
 
 <body style="background-color: lightgray">
     <div class="container-fluid">
+
+
+        <!-- Modal -->
+        <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                ...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary">Save changes</button>
+            </div>
+            </div>
+        </div>
+        </div>
+
+
+
+
         <div class="row mb-3">
             <div class="col-9">
                 <div class="text-right mt-4 mr-0 ">
@@ -165,7 +191,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
             ],
             'lista-fonte-elemento' => [
                 'data' => $fontElement ?? null,
-                'mensagem' => 'elementos que não estão no padrão CMYK.',
+                'mensagem' => 'elementos que podem sumir na impressao.',
                 'titulo' => 'Visibilidade da fonte',
             ],
 
@@ -178,10 +204,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                         <td>
                         <div class='d-flex flex-row'>
                             <h6>{$info['titulo']}</h6>
+                            
+                            <a class='ml-auto text-dark' data-toggle='modal' data-target='#exampleModal' href='#'>
                             <svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='currentColor' class='bi bi-info-circle ml-auto' viewBox='0 0 16 16'>
                                 <path d='M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16'/>
                                 <path d='m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0'/>
                             </svg>
+                            </a>
                          </div>
                         </td>
                         <td width='70%' class='p-0 m-0'>   
@@ -235,10 +264,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                         <td>
                         <div class='d-flex flex-row'>
                             <h6>{$info['titulo']}</h6>
-                            <svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='currentColor' class='bi bi-info-circle ml-auto' viewBox='0 0 16 16'>
+                            <a class='ml-auto text-dark' data-toggle='modal' data-target='#exampleModal' href='#'>
+                            <svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='currentColor' class='bi bi-info-circle ' viewBox='0 0 16 16'>
                                 <path d='M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16'/>
                                 <path d='m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0'/>
                             </svg>
+                            </a>
                          </div>
                         </td>
                         <td width='70%' class='p-0 m-0'>
