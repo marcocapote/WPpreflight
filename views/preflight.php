@@ -223,10 +223,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                                 if (isset($info['data']) && is_array($info['data']) && !empty($info['data'])) {
                                     echo "
 
-
-
-
-
                                              <tr>
                                                 <td>
                                                 <div class='d-flex flex-row'>
