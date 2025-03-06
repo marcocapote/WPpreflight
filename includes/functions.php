@@ -407,31 +407,31 @@ class Functions
         if (isset($pdfInfo['error']))
             return $pdfInfo['error'];
 
-    //     $saida = self::runJavaCommand($pdfInfo['path'], $pdfInfo['dir'], 'fontElement');
-    //     if (!$saida)
-    //         return "Erro na execução do preflight.";
+        $saida = self::runJavaCommand($pdfInfo['path'], $pdfInfo['dir'], 'fontElement');
+        if (!$saida)
+            return "Erro na execução do preflight.";
 
-    //     $mensagens = [];
-    //     foreach ($saida as $linha) {
-    //         $pattern = '/Pagina: (\d+)\s+Posicao: \(([\d.]+), ([\d.]+)\),\s+Tamanho: ([\d.]+)\s+CorTexto: \[([\d., ]*)\]\s+CorGrafico: \[([\d., ]*)\]/';
+        $mensagens = [];
+        foreach ($saida as $linha) {
+            $pattern = '/Pagina: (\d+)\s+Posicao: \(([\d.]+), ([\d.]+)\),\s+Tamanho: ([\d.]+)\s+CorTexto: \[([\d., ]*)\]\s+CorGrafico: \[([\d., ]*)\]/';
 
-    //         // Verifica se a regex corresponde à linha
-    //         if (preg_match($pattern, $linha, $matches)) {
-    //             // Extrai as informações relevantes
-    //             $pagina = $matches[1];       // Número da página
-    //             $posX = $matches[2];         // Coordenada X
-    //             $posY = $matches[3];         // Coordenada Y
-    //             $tamFonte = $matches[4];     // Tamanho da fonte
-    //             $corTexto = $matches[5];     // Cor do texto
-    //             $corGrafico = $matches[6];   // Cor do gráfico
-    //             $somaComponentes = 0;
-    //             if (!empty($corGrafico)) {
-    //                 // Remove espaços e divide os valores por vírgula
-    //                 $componentes = explode(',', str_replace(' ', '', $corGrafico));
+            // Verifica se a regex corresponde à linha
+            if (preg_match($pattern, $linha, $matches)) {
+                // Extrai as informações relevantes
+                $pagina = $matches[1];       // Número da página
+                $posX = $matches[2];         // Coordenada X
+                $posY = $matches[3];         // Coordenada Y
+                $tamFonte = $matches[4];     // Tamanho da fonte
+                $corTexto = $matches[5];     // Cor do texto
+                $corGrafico = $matches[6];   // Cor do gráfico
+                $somaComponentes = 0;
+                if (!empty($corGrafico)) {
+                    // Remove espaços e divide os valores por vírgula
+                    $componentes = explode(',', str_replace(' ', '', $corGrafico));
 
-    //                 // Converte os valores para float e soma
-    //                 $somaComponentes = array_sum(array_map('floatval', $componentes));
-    //             }
+                    // Converte os valores para float e soma
+                    $somaComponentes = array_sum(array_map('floatval', $componentes));
+                }
 
                 if ($somaComponentes > 1   &&  $tamFonte <= 5 && $corTexto == '0.0, 0.0, 0.0, 0.0') {
                     $mensagens[] = "Pagina: $pagina Texto cor: $corTexto, gráfico cor: $corGrafico, tamanho da fonte: $tamFonte, posição: ($posX, $posY) na página $pagina soma dos componentes: $somaComponentes";
@@ -440,11 +440,11 @@ class Functions
             } 
         }
 
-    //     if (!empty($mensagens)) {
-    //         return $mensagens;
-    //     } else {
-    //         return "Todos os elementos de texto aparecerão na impressao";
-    //     }
+        if (!empty($mensagens)) {
+            return $mensagens;
+        } else {
+            return "Todos os elementos de texto aparecerão na impressao";
+        }
 
     }
     public static function javaFontePreta($uploaded_file){
