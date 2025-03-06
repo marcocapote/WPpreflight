@@ -1,0 +1,1 @@
+A sangria é uma área extra ao redor do design que garante que não fiquem bordas brancas indesejadas ao cortar o material impresso. Se ela não estiver configurada corretamente, pode haver cortes desalinhados e um resultado final comprometido.

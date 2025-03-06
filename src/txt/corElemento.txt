@@ -1,0 +1,1 @@
+Assim como as fontes, imagens e vetores também precisam estar no padrão CMYK. Caso estejam em RGB (usado em telas), as cores podem sair diferentes na impressão. O CMYK garante que as cores fiquem mais fiéis ao esperado.

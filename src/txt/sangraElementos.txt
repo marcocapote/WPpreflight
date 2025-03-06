@@ -1,0 +1,1 @@
+Não basta apenas configurar a sangria no arquivo, os elementos gráficos (como imagens e fundos) também precisam ultrapassar o limite da página. Se eles pararem antes da sangria recomendada (5mm), podem aparecer falhas brancas na impressão.

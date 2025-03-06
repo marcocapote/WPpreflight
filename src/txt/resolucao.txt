@@ -1,0 +1,1 @@
+Para que as imagens fiquem nítidas na impressão, elas precisam ter uma boa qualidade. A resolução recomendada é 300dpi (pontos por polegada). Se a imagem estiver com uma resolução menor, pode ficar borrada ou pixelada no resultado final.

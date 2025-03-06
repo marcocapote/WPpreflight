@@ -1,0 +1,1 @@
+Se elementos gráficos estiverem muito perto da linha de corte (TrimBox), pode ser necessário reposicioná-los para manter uma margem de segurança de pelo menos 5mm. Isso evita que detalhes importantes fiquem "espremidos" na borda do impresso.

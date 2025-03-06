@@ -1,0 +1,1 @@
+A margem de segurança garante que textos e elementos importantes não fiquem muito próximos da borda do papel. Isso evita que informações importantes sejam cortadas ou fiquem muito próximas da extremidade, prejudicando a leitura e o visual.

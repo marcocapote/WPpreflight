@@ -1,0 +1,1 @@
+Se um texto branco for muito pequeno (menos de 5 pontos) e estiver sobre um fundo muito escuro (acima de 180% de intensidade), ele pode simplesmente desaparecer na impressão. Isso acontece porque a tinta escura pode "engolir" a fonte, tornando-a ilegível.

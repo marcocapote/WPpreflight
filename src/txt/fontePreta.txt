@@ -1,0 +1,1 @@
+Quando um texto preto está configurado com valores de cor errados (por exemplo, misturando C, M e Y com o K acima de 90%), ele pode ficar "manchado" ou difícil de imprimir corretamente. O ideal é que fontes pretas sejam configuradas apenas com K=100% para um resultado limpo e nítido.

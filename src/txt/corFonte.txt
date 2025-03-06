@@ -1,0 +1,1 @@
+As fontes devem estar configuradas no padrão de cores CMYK, que é o sistema usado na impressão. Se uma fonte estiver em outro formato de cor, pode haver variações inesperadas e diferenças entre o que aparece na tela e o que será impresso.
