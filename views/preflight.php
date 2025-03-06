@@ -161,7 +161,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
             ],
             'lista-margem-seguranca' => [
                 'data' => $margemseguranca ?? null,
-                'mensagem' => 'páginas a qual possui algum elemento / imagem fora da área mínima de segurança',
+                'mensagem' => 'páginas em que a margem de segurança não está configurada (opcional).',
                 'titulo' => 'Margem de segurança',
             ],
             'lista-get-MSI' => [
