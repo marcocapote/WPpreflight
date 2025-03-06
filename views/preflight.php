@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
         <div class="row mb-3">
             <div class="col-9">
                 <div class="text-right mt-4 mr-0 ">
-                    <h3>Preflight Beta 1.3.0</h3>
+                    <h3>Preflight Beta 1.3.2</h3>
                 </div>
             </div>
             <div class="col-3">
@@ -191,7 +191,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
             ],
             'lista-fonte-elemento' => [
                 'data' => $fontElement ?? null,
-                'mensagem' => 'elementos que podem sumir na impressao.',
+                'mensagem' => 'fontes que podem apresentar problemas na impressao.',
                 'titulo' => 'Visibilidade da fonte',
             ],
 

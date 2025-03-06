@@ -434,7 +434,7 @@ class Functions
                 }
 
                 if ($somaComponentes >= 1.8   &&  $tamFonte <= 5 && $corTexto == '0.0, 0.0, 0.0, 0.0') {
-                    $mensagens[] = "Pagina: $pagina Texto cor: $corTexto, gráfico cor: $corGrafico, tamanho da fonte: $tamFonte na página $pagina soma dos componentes: $somaComponentes";
+                    $mensagens[] = "Pagina: $pagina Foram encontrados textos sobre um fundo escuro que podem apresentar problemas. Cor da fonte $corTexto Cor do fundo $corGrafico";
                 }
 
             } 
@@ -488,7 +488,7 @@ class Functions
                 // Exemplo de tratamento:
                 if (strtolower($corType) == 'devicecmyk' ) {
                     if ($componentes[3] >= 0.7 && ($componentes[0] > 0 || $componentes[1] > 0 || $componentes[2] > 0)) {
-                        $mensagens[] = "Pagina: $pagina Encontrado texto preto com outras cores: " . $corValues;
+                        $mensagens[] = "Pagina: $pagina Encontrado texto que deveria estar somente no canal do preto 100%K, mas possui contaminação de outras cores: " . $corValues;
                     }
                 }
 
