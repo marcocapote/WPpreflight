@@ -520,6 +520,9 @@ class Functions
 
 
     }
+    public static function returnUrl($uploaded_file){
+        return $uploaded_file['url'];
+    }
 
 }
 ?>

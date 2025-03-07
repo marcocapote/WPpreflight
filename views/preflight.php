@@ -50,6 +50,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
         //verifica se as fontes pretas estão manchadas
         $javaFontePreta = Functions::javaFontePreta($uploaded_file);
 
+        //retorna o url do arquivo
+        $fileUrl = Functions::returnUrl($uploaded_file);
     }
 }
 
@@ -60,7 +62,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Preflight Beta 1.3</title>
+    <title>Preflight Beta 1.4</title>
+
+    <!-- script pdf js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
         integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
@@ -77,17 +82,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
 
 <body style="background-color: lightgray">
     <div class="container-fluid">
-
-
-
-
-
-
-
         <div class="row mb-3">
             <div class="col-9">
                 <div class="text-right mt-4 mr-0 ">
-                    <h3>Preflight Beta 1.3.2</h3>
+                    <h3>Preflight Beta 1.4.0</h3>
                 </div>
             </div>
             <div class="col-3">
@@ -264,18 +262,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                                         ";
 
                                     foreach ($info['data'] as $item) {
+                                        $col1;
+                                        $col2;
+                                        $numeroPagina = 0;
+
                                         // Separar a mensagem em duas partes: "Pagina: <num>" e o restante
                                         if (preg_match('/^(Pagina:\s*\d+)(.*)$/i', $item, $matches)) {
                                             $col1 = trim($matches[1]); // "Pagina: <num>"
                                             $col2 = trim($matches[2]); // o restante da mensagem
+                        
+                                            if (preg_match('/\d+/', $col1, $numMatch)) {
+                                                $numeroPagina = $numMatch[0]; // Captura apenas o número
+                                            }
                                         } else {
                                             $col1 = $item;
                                             $col2 = "";
                                         }
-                                        echo " 
+
+                                        echo "
+                                                <div class='modal fade' id='dataModal-{$numeroPagina}' tabindex='-1' role='dialog' aria-labelledby='exampleModalLabel' aria-hidden='true'>
+                                                    <div class='modal-dialog' role='document'>
+                                                        <div class='modal-content'>
+                                                            <div class='modal-header'>
+                                                                <h5 class='modal-title' id='exampleModalLabel'>{$col1}</h5>
+                                                                <button type='button' class='close' data-dismiss='modal' aria-label='Close'>
+                                                                    <span aria-hidden='true'>&times;</span>
+                                                                </button>
+                                                            </div>
+                                                            <div class='modal-body'>
+                                                                <input type='number' id='page-number-{$numeroPagina}' value='{$numeroPagina}' min='1'>
+                                                                <button id='prev-page-{$numeroPagina}'>Anterior</button>
+                                                                <button id='next-page-{$numeroPagina}'>Próxima</button>
+                                                                <canvas id='pdf-canvas-{$numeroPagina}'></canvas>
+                                                            </div>
+                                                            <div class='modal-footer'>
+                                                                <button type='button' class='btn btn-secondary' data-dismiss='modal'>Fechar</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                        
                                                 <tr>
-                                                    <td style='text-align: center;'>{$col1}</td>
-                                                    <td width='70%'>{$col2}</td>
+                                                    <td style='text-align: center;'>
+                                                        <a class='ml-auto text-dark' data-toggle='modal' data-target='#dataModal-{$numeroPagina}' href='#'>
+
+                                                        {$col1}
+
+                                                        <svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='currentColor' class='bi bi-eye mr-2 text-dark' viewBox='0 0 16 16'>
+                                                        <path d='M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z'/>
+                                                        <path d='M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0'/>
+
+                                                        </a>
+                                                        </svg>
+                                                    </td>
+                                                    <td width='70%'>
+                                                        {$col2}
+                                                    </td>
                                                 </tr>
                                             ";
                                     }
@@ -324,7 +366,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                 </div>
             </div>
         </div>
-
+        <input id="teste" value="<?php echo $fileUrl ?>" hidden></input>
 
     </div>
 </body>
@@ -347,15 +389,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
 
             // SVG padrão (olho) e SVG alternado (olho riscado)
             const eyeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-eye mr-2 text-dark" viewBox="0 0 16 16">
-        <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z"/>
-        <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0"/>
-        </svg>`;
+                            <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z"/>
+                            <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0"/>
+                            </svg>`;
 
             const eyeSlashSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-eye-slash text-dark mr-2" viewBox="0 0 16 16">
-        <path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7 7 0 0 0-2.79.588l.77.771A6 6 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755q-.247.248-.517.486z"/>
-        <path d="M11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.829 2.829zm-2.943 1.299.822.822a3.5 3.5 0 0 1-4.474-4.474l.823.823a2.5 2.5 0 0 0 2.829 2.829"/>
-        <path d="M3.35 5.47q-.27.24-.518.487A13 13 0 0 0 1.172 8l.195.288c.335.48.83 1.12 1.465 1.755C4.121 11.332 5.881 12.5 8 12.5c.716 0 1.39-.133 2.02-.36l.77.772A7 7 0 0 1 8 13.5C3 13.5 0 8 0 8s.939-1.721 2.641-3.238l.708.709zm10.296 8.884-12-12 .708-.708 12 12z"/>
-        </svg>`;
+                                <path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7 7 0 0 0-2.79.588l.77.771A6 6 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755q-.247.248-.517.486z"/>
+                                <path d="M11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.829 2.829zm-2.943 1.299.822.822a3.5 3.5 0 0 1-4.474-4.474l.823.823a2.5 2.5 0 0 0 2.829 2.829"/>
+                                <path d="M3.35 5.47q-.27.24-.518.487A13 13 0 0 0 1.172 8l.195.288c.335.48.83 1.12 1.465 1.755C4.121 11.332 5.881 12.5 8 12.5c.716 0 1.39-.133 2.02-.36l.77.772A7 7 0 0 1 8 13.5C3 13.5 0 8 0 8s.939-1.721 2.641-3.238l.708.709zm10.296 8.884-12-12 .708-.708 12 12z"/>
+                                </svg>`;
 
             if (targetContainer) {
                 if (targetContainer.style.display === 'table-row-group') {
@@ -414,6 +456,82 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
             }
         });
     });
+let pdfDoc = null;
 
+// Função para renderizar a página
+function renderPage(modalId) {
+    if (!pdfDoc) return;
 
+    // Obtém os elementos específicos do modal
+    let pageNumberInput = document.getElementById(`page-number-${modalId}`);
+    let canvas = document.getElementById(`pdf-canvas-${modalId}`);
+    let ctx = canvas.getContext("2d");
+
+    let pageNumber = parseInt(pageNumberInput.value) || 1;
+    if (pageNumber < 1 || pageNumber > pdfDoc.numPages) return;
+
+    pdfDoc.getPage(pageNumber).then(page => {
+        // Calcula a largura disponível no modal
+        let modalBody = canvas.closest('.modal-body');
+        let maxWidth = modalBody.clientWidth - 40;
+
+        // Ajusta a escala para caber na largura do modal
+        let viewport = page.getViewport({ scale: 1 });
+        let scale = maxWidth / viewport.width;
+        viewport = page.getViewport({ scale: scale });
+
+        // Define o tamanho do canvas
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        // Renderiza a página
+        let renderContext = {
+            canvasContext: ctx,
+            viewport: viewport
+        };
+        page.render(renderContext);
+    });
+}
+
+// Função para carregar o PDF
+function loadPDF(pdfUrl, modalId) {
+    pdfjsLib.getDocument(pdfUrl).promise.then(pdf => {
+        pdfDoc = pdf;
+
+        // Define o valor inicial do input como a página do modal
+        let pageNumberInput = document.getElementById(`page-number-${modalId}`);
+        pageNumberInput.value = modalId; // Define a página inicial com base no modalId
+
+        // Renderiza a página inicial
+        renderPage(modalId);
+
+        // Adiciona eventos de navegação para o modal atual
+        document.getElementById(`prev-page-${modalId}`).addEventListener("click", () => {
+            let currentPage = parseInt(pageNumberInput.value) || 1;
+            if (currentPage > 1) {
+                pageNumberInput.value = currentPage - 1;
+                renderPage(modalId);
+            }
+        });
+
+        document.getElementById(`next-page-${modalId}`).addEventListener("click", () => {
+            let currentPage = parseInt(pageNumberInput.value) || 1;
+            if (currentPage < pdfDoc.numPages) {
+                pageNumberInput.value = currentPage + 1;
+                renderPage(modalId);
+            }
+        });
+    }).catch(error => {
+        console.error('Erro ao carregar o PDF:', error);
+    });
+}
+
+// Inicializa o PDF para cada modal
+document.querySelectorAll('[data-toggle="modal"]').forEach(link => {
+    link.addEventListener('click', function() {
+        let modalId = this.getAttribute('data-target').replace('#dataModal-', '');
+        let pdfUrl = document.getElementById("teste").value; // URL fixa do PDF
+        loadPDF(pdfUrl, modalId);
+    });
+});
 </script>
