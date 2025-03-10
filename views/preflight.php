@@ -85,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
         <div class="row mb-3">
             <div class="col-9">
                 <div class="text-right mt-4 mr-0 ">
-                    <h3>Preflight Beta 1.4.5</h3>
+                    <h3>Preflight Beta 1.4.6</h3>
                 </div>
             </div>
             <div class="col-3">
@@ -380,7 +380,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                 </div>
             </div>
         </div>
-        <input id="teste" value="<?php echo $fileUrl ?>" hidden></input>
+        <input id="teste" value="<?php if (isset($fileUrl)){ echo $fileUrl; }?>" hidden></input>
 
     </div>
 </body>
