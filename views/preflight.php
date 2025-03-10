@@ -85,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
         <div class="row mb-3">
             <div class="col-9">
                 <div class="text-right mt-4 mr-0 ">
-                    <h3>Preflight Beta 1.4.0</h3>
+                    <h3>Preflight Beta 1.4.5</h3>
                 </div>
             </div>
             <div class="col-3">
@@ -121,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                 <div class="text">Tamanho do arquivo: <?php echo $quantidade['size'] ?? ' nao encontrado' ?> </div>
             </div>
         </div>
-        <div class="row bg-light ">
+        <div class="row bg-light mb-5">
             <div class="col border-top">
                 <div class="container pt-3 pb-2">
                     <table>
@@ -358,10 +358,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
                                         ";
                                 }
                             }
+
                         }
                         ?>
                     </table>
 
+                    <?php 
+                        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])){
+                            echo "
+                            
+                                    <form id='formulario-relatorio' method='post' class='mb-3'>
+                                        <label for='relatorio'>Reporte um erro/sugestão:</label>
+                                        <textarea id='relatorio' name='texto'></textarea>
+                                        <button class='btn btn-primary mt-2' id='enviarRelatorio' name='enviar_relatorio'>Enviar</button>
+                                    </form>
+
+                                ";
+                        }
+                                ?>
 
                 </div>
             </div>
@@ -375,6 +389,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('enviarRelatorio').addEventListener('click', function () {
+            event.preventDefault();
+            fetch('<?php echo admin_url("admin-ajax.php"); ?>', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({
+                        action: 'retornar_relatorio',
+                        texto: document.getElementById('relatorio').value
+                    })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Relatório enviado com sucesso!');
+                            document.getElementById('relatorio').value = '';
+                            // Atualizar a tabela ou realizar qualquer outra ação necessária
+                        } else {
+                            alert('Erro ao enviar o relatório!');
+                        }
+                    })
+                    .catch(error => console.error('Erro:', error));
+        });
 
         document.body.addEventListener('click', function (event) {
             // Garante que o clique seja tratado mesmo que seja em um elemento interno

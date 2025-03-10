@@ -28,3 +28,32 @@ add_action('rest_api_init', function () {
 });
 
 
+
+function WPpreflight_adicionar_scripts() {
+    // Enfileirar o script JavaScript
+    wp_enqueue_script(
+        'wppreflight-script', // Nome do script
+        plugins_url('js/script.js', __FILE__), // Caminho do arquivo JS
+        array('jquery'), // Dependências (jQuery é necessário para o AJAX do WordPress)
+        '1.0', // Versão
+        true // Carregar no footer
+    );
+
+    // Localizar a URL de admin-ajax.php para uso no JavaScript
+    wp_localize_script(
+        'wppreflight-script',
+        'wppreflight_ajax',
+        array(
+            'ajax_url' => admin_url('admin-ajax.php'), // URL do admin-ajax.php
+            'nonce' => wp_create_nonce('wppreflight_nonce') // Criar um nonce para segurança
+        )
+    );
+}
+add_action('wp_enqueue_scripts', 'WPpreflight_adicionar_scripts');
+
+
+
+add_action( 'wp_ajax_retornar_relatorio', [$functions, 'retornar_relatorio'] );
+add_action( 'wp_ajax_nopriv_retornar_relatorio', [$functions, 'retornar_relatorio'] );
+
+

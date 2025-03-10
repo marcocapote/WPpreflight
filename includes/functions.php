@@ -524,5 +524,18 @@ class Functions
         return $uploaded_file['url'];
     }
 
+    public static function retornar_relatorio(){
+        $texto = $_POST['texto'];
+
+        $caminho = plugin_dir_path(__FILE__) . '../src/txt/output.txt'; // Caminho do arquivo
+
+        // Tentar salvar no arquivo
+        if (file_put_contents($caminho, $texto . PHP_EOL, FILE_APPEND)) {
+            wp_send_json_success(array('mensagem' => 'Relatório enviado com sucesso!'));
+        } else {
+            wp_send_json_error(array('mensagem' => 'Erro ao enviar o relatório!'));
+        }
+    }
+
 }
 ?>
