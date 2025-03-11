@@ -531,11 +531,30 @@ class Functions
 
         // Tentar salvar no arquivo
         if (file_put_contents($caminho, $texto . PHP_EOL, FILE_APPEND)) {
+                        // Dados do novo post
+                        $novo_post = array(
+                            'post_title'   => 'Relatório enviado', // Pode customizar isso
+                            'post_content' => sanitize_text_field($_POST['texto']), // Protege contra ataques
+                            'post_status'  => 'publish', // Publica automaticamente
+                            'post_author'  => get_current_user_id(),
+                            'post_type'    => 'post' // Pode mudar para custom post type se desejar
+                        );
+                            // Insere o post no WordPress
+                        $post_id = wp_insert_post($novo_post);
             wp_send_json_success(array('mensagem' => 'Relatório enviado com sucesso!'));
         } else {
             wp_send_json_error(array('mensagem' => 'Erro ao enviar o relatório!'));
         }
+
+
+
+        if ($post_id) {
+            wp_send_json_success(['mensagem' => 'Relatório publicado!', 'post_id' => $post_id]);
+        } else {
+            wp_send_json_error(['mensagem' => 'Erro ao publicar o relatório!']);
+        }
     }
+
 
 }
 ?>
